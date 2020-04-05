@@ -1,0 +1,132 @@
+'micro(A) tokenizer by Aurel 29.3.2020
+Include "microBh.inc"
+INT startTime ,endTime: float procTime  ' GetTickCount -timer init
+declare sub tokenizer( src as string) as INT
+declare sub run_tokenizer(inputCode as string) as INT
+int tkNULL=0, tkPLUS=1, tkMINUS=2, tkMULTI=3, tkDIVIDE=4
+int tkCOLON=5, tkCOMMA=6, tkLPAREN=7, tkRPAREN=8, tkLBRACKET=9, tkRBRACKET=10
+int tkIDENT = 11 , tkNUMBER = 12 , tkSTRING = 13, tkCOMMAND =14 ,tkEOL = 15
+int tkEQUAL = 16, tkMORE = 17, tkLESS =18,tkAND=19, tkOR=20, tkNOT = 21
+int tkHASH=22 , tkSSTR=23, tkMOD=24
+
+string tokList[1024] : int typList[1024]                     'token/type arrays
+int start , p = 1 ,start = p ,tp , tn, n ,ltp=1 ,nTokens     ' nTokens -> number of tokens
+int lineCount, Lpar, Rpar, Lbrk, Rbrk, tokerr ,codeLen=0
+string code,ch,tch,tk ,crlf=chr(13)+chr(10),bf,ntk
+'--------------------------------------------------------------------
+'code = "2*(3+4)"     + crlf  +  ' line 1
+       '"': b =6 "   + crlf  +  ' line 2
+      ' ":if a>b"    + crlf     ' line 3
+' ~~~~~~~~~~~~~~~~     MAIN TOKENIZER SUBROUTINE  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+SUB tokenizer(src as string) as int 
+'print "tokenizer run;" + src
+lineCount=0:ltp=start : nTokens = 0
+while p <= len(src)
+ '................................................................................................          
+    ch = mid(src,p,1)                                                  ' get char
+ If asc(ch)=32 : p=p+1 : end if                                        ' skip blank space[ ]
+ If asc(ch)=9  : p=p+1 : end if                                        ' skip TAB [    ]
+ if asc(ch)=13 : p=p+1 : end if                                        ' skip CR
+ if asc(ch)=39                                                         ' skip comment line[ ' ]                                                       
+    while asc(ch) <> 10 
+      p++ : ch = mid(src,p,1) : if asc(ch)= 10 then exit while
+    wend
+   p++: goto endLoop                                                   ' jump to end of loop
+ end if 
+
+ If asc(ch)=10                                                         ' EOL
+	if Lpar > Rpar  : tokerr=3 : goto tokExit : end if			  ' if Rparen ((...)
+	if Lpar < Rpar  : tokerr=4 : goto tokExit : end if			  ' if Lparen (...))
+	if Lbrk > Rbrk  : tokerr=5 : goto tokExit : end if			  ' if Lbracket [..
+	if Lbrk < Rbrk  : tokerr=6 : goto tokExit : end if			  ' if Rbracket ...]
+ lineCount++ : tp++ : tokList[tp]="EOL" :typList[tp]= tkEOL: tk="": ch="" : p++ 
+ End if 
+'--------------------------------------------------------
+ If asc(ch)=34                                                         ' if char is QUOTE "
+ p++ :  ch = mid(src,p,1) : tk=ch : p++                                ' skip quote :add ch TO tk buffer: p+1
+	while asc(ch) <> 34        
+	   ch = mid(src,p,1) : if asc(ch)= 34 then exit while
+        tk=tk+ch : p++ 
+        IF ch = chr(10): tokerr = 2: goto tokExit : end if
+	wend
+    tp++ : tokList[tp]= tk :typList[tp]= tkSTRING: tk="":ch="": p++    ' add quoted string to token list
+ End if
+'-------------------------------------------------------            
+ If (asc(ch)>96 and asc(ch)<123) or (asc(ch)>64 and asc(ch)<91) or asc(ch)=95                                        ' [a-z,A-Z_]
+   while (asc(ch)>96 and asc(ch)<123) or  (asc(ch)>64 and asc(ch)<91) or (asc(ch)>47 and asc(ch)<58) or asc(ch)=95   ' [a-z,A-Z,0-9_]
+         tk=tk+ch : p++ : ch = mid(src,p,1) 
+   wend
+      ' ' add token ,add token type/IDENT:{VAR/COMMAND}
+       tp++ : tokList[tp] = tk :typList[tp]= tkIDENT: tk="":ch=""       
+ End If
+'--------------------------------------------------------------
+ If (asc(ch)>47 and asc(ch)<58)                                       ' [0-9.]
+    while (asc(ch)>47 AND asc(ch)<58) OR asc(ch)=46                   ' [0-9[0.0]]*
+        tk=tk+ch :p++ : ch = mid(src,p,1)
+    wend
+       ' add token ,add token type/NUMBER
+       tp++ : tokList[tp] = tk : typList[tp]= tkNUMBER: tk="":ch=""
+ End if
+'--------------------------------------------------------------------
+ If asc(ch)=43 : tp++ : tokList[tp] = ch :typList[tp]= tkPLUS:    ch="" : p++ : End if  		' + plus 
+ If asc(ch)=45 : tp++ : tokList[tp] = ch :typList[tp]= tkMINUS:   ch="" : p++ : End if  		' - minus
+ If asc(ch)=42 : tp++ : tokList[tp] = ch :typList[tp]= tkMULTI:   ch="" : p++ : End if  		' * multiply
+ If asc(ch)=47 : tp++ : tokList[tp] = ch :typList[tp]= tkDIVIDE:  ch="" : p++ : End if			' / divide
+ If asc(ch)=40 : tp++ : tokList[tp] = ch :typList[tp]= tkLPAREN:  ch="" : p++ : Lpar++ : End if ' ( Lparen
+ If asc(ch)=41 : tp++ : tokList[tp] = ch :typList[tp]= tkRPAREN:  ch="" : p++ : Rpar++ : End if ' ) Rparen
+ If asc(ch)=44 : tp++ : tokList[tp] = ch :typList[tp]= tkCOMMA:   ch="" : p++ : End if  		' , comma
+ If asc(ch)=58 : tp++ : tokList[tp] = ch :typList[tp]= tkCOLON:   ch="" : p++ : End if  		' : colon
+ If asc(ch)=60 : tp++ : tokList[tp] = ch :typList[tp]= tkLESS:    ch="" : p++ : End if  		' < less
+ If asc(ch)=61 : tp++ : tokList[tp] = ch :typList[tp]= tkEQUAL:   ch="" : p++ : End if  		' = equal
+ If asc(ch)=62 : tp++ : tokList[tp] = ch :typList[tp]= tkMORE:    ch="" : p++ : End if  		' > more(greater)
+ If asc(ch)=91 : tp++ : tokList[tp] = ch :typList[tp]= tkLBRACKET:ch="" : p++ : Lbrk++ :End if  ' [ Lbracket
+ If asc(ch)=93 : tp++ : tokList[tp] = ch :typList[tp]= tkRBRACKET:ch="" : p++ : Rbrk++ :End if  ' ] Rbracket
+ If asc(ch)=38 : tp++ : tokList[tp] = ch :typList[tp]= tkAND:     ch="" : p++ : End if  		' & AND
+ If asc(ch)=124 :tp++ : tokList[tp] = ch :typList[tp]= tkOR:      ch="" : p++ : End if  	     ' | OR
+ If asc(ch)=33 : tp++ : tokList[tp] = ch :typList[tp]= tkNOT:     ch="" : p++ : End if  		' ! NOT
+ If asc(ch)=35 : tp++ : tokList[tp] = ch :typList[tp]= tkHASH:    ch="" : p++ : End if  		' # hash
+ If asc(ch)=36 : tp++ : tokList[tp] = ch :typList[tp]= tkSSTR:    ch="" : p++ : End if  		' $ $TRING
+ If asc(ch)=37 : tp++ : tokList[tp] = ch :typList[tp]= tkMOD :    ch="" : p++ : End if  		' % percent/MOD 
+ 
+IF ASC(ch)>125 : tokerr = 1 : goto tokExit : END IF
+'.............................................................................................
+endLoop:
+wend
+Return tp
+tokExit:
+  IF tokerr > 0 
+	if tokerr = 1: MsgBox "Unknown token!-[ " + ch +" ] at LINE: " + str(lineCount),"T:Error"  : end if
+	if tokerr = 2: MsgBox "Unclosed Quote!- at LINE: " + str(lineCount),"T:Error"              : end if
+	if tokerr = 3: MsgBox "Missing right paren! ((...)- at LINE: " + str(lineCount),"T:Error"  : end if
+	if tokerr = 4: MsgBox "Missing left paren!- at LINE: " + str(lineCount),"T:Error"          : end if
+	if tokerr = 5: MsgBox "Missing right bracket!- at LINE: " + str(lineCount),"T:Error"       : end if
+	if tokerr = 6: MsgBox "Missing left bracket!- at LINE: " + str(lineCount),"T:Error"        : end if
+	Return 0 
+  END IF
+
+END SUB
+
+/*'call tokenizer..tested(ident,numbers) /////////////////////////////////
+int tn: tn = tokenizer(code) 
+*/
+ 'if tn=0 then goto ExitProgram  >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+SUB run_tokenizer(s as string ) as INT
+  
+     tn = tokenizer(s)
+     If tokerr > 0 
+     if tn = 0 then goto ExitTokenizer
+     End if
+  
+print "Number of tokens: " + str(tn) + crlf + "Number of lines: " + str(lineCount): nTokens = tn
+For n = 1 to tn : bf = bf + tokList[n] + crlf : Next n
+MsgBox bf,"Token List:"  ' show token list
+return 1  ' if OK return 1
+ExitTokenizer:
+MsgBox "EXIT from TOKENIZER" ,"Process Terminated!"
+return 0
+END SUB
+
+IF codeLen>0
+	ExitProgram:
+	MsgBox "EXIT..." ,"Program Terminated!" : tn = 0
+END IF
