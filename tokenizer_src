@@ -1,13 +1,13 @@
-'micro(A) tokenizer by Aurel 29.3.2020
+'micro(A) tokenizer by Aurel 21.6.2020
 Include "microBh.inc"
 INT startTime ,endTime: float procTime  ' GetTickCount -timer init
 declare sub tokenizer( src as string) as INT
 declare sub run_tokenizer(inputCode as string) as INT
 int tkNULL=0, tkPLUS=1, tkMINUS=2, tkMULTI=3, tkDIVIDE=4
 int tkCOLON=5, tkCOMMA=6, tkLPAREN=7, tkRPAREN=8, tkLBRACKET=9, tkRBRACKET=10
-int tkIDENT = 11 , tkNUMBER = 12 , tkSTRING = 13, tkCOMMAND =14 ,tkEOL = 15
+int tkIDENT = 11 , tkNUMBER = 12 , tkQSTRING = 13, tkCOMMAND =14 ,tkEOL = 15
 int tkEQUAL = 16, tkMORE = 17, tkLESS =18,tkAND=19, tkOR=20, tkNOT = 21
-int tkHASH=22 , tkSSTR=23, tkMOD=24
+int tkHASH=22 , tkSSTR=23, tkMOD=24 , tkSEMI=25, tkDOT=26, tkLBRACE=27, tkRBRACE=28
 
 string tokList[1024] : int typList[1024]                     'token/type arrays
 int start , p = 1 ,start = p ,tp , tn, n ,ltp=1 ,nTokens     ' nTokens -> number of tokens
@@ -31,6 +31,7 @@ while p <= len(src)
     while asc(ch) <> 10 
       p++ : ch = mid(src,p,1) : if asc(ch)= 10 then exit while
     wend
+   lineCount++ : tp++ : tokList[tp]="EOL" :typList[tp]= tkEOL: tk="": ch=""  ' add EOL on comment end
    p++: goto endLoop                                                   ' jump to end of loop
  end if 
 
@@ -49,7 +50,7 @@ while p <= len(src)
         tk=tk+ch : p++ 
         IF ch = chr(10): tokerr = 2: goto tokExit : end if
 	wend
-    tp++ : tokList[tp]= tk :typList[tp]= tkSTRING: tk="":ch="": p++    ' add quoted string to token list
+    tp++ : tokList[tp]= tk :typList[tp]= tkQSTRING: tk="":ch="": p++    ' add quoted string to token list
  End if
 '-------------------------------------------------------            
  If (asc(ch)>96 and asc(ch)<123) or (asc(ch)>64 and asc(ch)<91) or asc(ch)=95                                        ' [a-z,A-Z_]
@@ -76,6 +77,7 @@ while p <= len(src)
  If asc(ch)=41 : tp++ : tokList[tp] = ch :typList[tp]= tkRPAREN:  ch="" : p++ : Rpar++ : End if ' ) Rparen
  If asc(ch)=44 : tp++ : tokList[tp] = ch :typList[tp]= tkCOMMA:   ch="" : p++ : End if  		' , comma
  If asc(ch)=58 : tp++ : tokList[tp] = ch :typList[tp]= tkCOLON:   ch="" : p++ : End if  		' : colon
+ If asc(ch)=59 : tp++ : tokList[tp] = ch :typList[tp]= tkSEMI :   ch="" : p++ : End if          ' ; semi_colon
  If asc(ch)=60 : tp++ : tokList[tp] = ch :typList[tp]= tkLESS:    ch="" : p++ : End if  		' < less
  If asc(ch)=61 : tp++ : tokList[tp] = ch :typList[tp]= tkEQUAL:   ch="" : p++ : End if  		' = equal
  If asc(ch)=62 : tp++ : tokList[tp] = ch :typList[tp]= tkMORE:    ch="" : p++ : End if  		' > more(greater)
@@ -87,6 +89,10 @@ while p <= len(src)
  If asc(ch)=35 : tp++ : tokList[tp] = ch :typList[tp]= tkHASH:    ch="" : p++ : End if  		' # hash
  If asc(ch)=36 : tp++ : tokList[tp] = ch :typList[tp]= tkSSTR:    ch="" : p++ : End if  		' $ $TRING
  If asc(ch)=37 : tp++ : tokList[tp] = ch :typList[tp]= tkMOD :    ch="" : p++ : End if  		' % percent/MOD 
+ If asc(ch)=46 : tp++ : tokList[tp] = ch :typList[tp]= tkDOT :    ch="" : p++ : End if  		' . dot/point
+ If asc(ch)=123 : tp++ : tokList[tp] = ch :typList[tp]= tkLBRACE :    ch="" : p++ : End if      ' { LBrace
+ If asc(ch)=125 : tp++ : tokList[tp] = ch :typList[tp]= tkRBRACE :    ch="" : p++ : End if      ' } RBrace
+
  
 IF ASC(ch)>125 : tokerr = 1 : goto tokExit : END IF
 '.............................................................................................
@@ -98,7 +104,7 @@ tokExit:
 	if tokerr = 1: MsgBox "Unknown token!-[ " + ch +" ] at LINE: " + str(lineCount),"T:Error"  : end if
 	if tokerr = 2: MsgBox "Unclosed Quote!- at LINE: " + str(lineCount),"T:Error"              : end if
 	if tokerr = 3: MsgBox "Missing right paren! ((...)- at LINE: " + str(lineCount),"T:Error"  : end if
-	if tokerr = 4: MsgBox "Missing left paren!- at LINE: " + str(lineCount),"T:Error"          : end if
+	if tokerr = 4: MsgBox "Missing left paren! (...))- at LINE: " + str(lineCount),"T:Error"   : end if
 	if tokerr = 5: MsgBox "Missing right bracket!- at LINE: " + str(lineCount),"T:Error"       : end if
 	if tokerr = 6: MsgBox "Missing left bracket!- at LINE: " + str(lineCount),"T:Error"        : end if
 	Return 0 
@@ -119,7 +125,8 @@ SUB run_tokenizer(s as string ) as INT
   
 print "Number of tokens: " + str(tn) + crlf + "Number of lines: " + str(lineCount): nTokens = tn
 For n = 1 to tn : bf = bf + tokList[n] + crlf : Next n
-MsgBox bf,"Token List:"  ' show token list
+if lineCount = 0 then goto ExitTokenizer
+'MsgBox bf,"Token List:"  ' show token list
 return 1  ' if OK return 1
 ExitTokenizer:
 MsgBox "EXIT from TOKENIZER" ,"Process Terminated!"
