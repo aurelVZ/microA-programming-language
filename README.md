@@ -13,7 +13,7 @@ Here is a simple Fibonacci sequence example
 
 'fibonacci series in micro(A)
 varnum a, b, s, i ,n ,x ,y
-wcolor 0,0,0 : fcolor 220,180,100
+wcolor 0,0,0 : fcolor 220,180,10
 print 10,10,"fibonacci sequence in micro(A)"
 fcolor 80,140,120
 print 10,30,"number of elements ->"
@@ -34,3 +34,4 @@ i = i + 1
 if i < 23 
    goto start
 endif
+
