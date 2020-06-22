@@ -10,8 +10,8 @@ It is easy to modify and use for any purpose.
 For more information look : https://aurelsoft.ucoz.com
 
 # List of built-in statemens and functions
-# variable types :
-varNum a,b,c,d
+## variable types :
+varNum a,b,c,d /n
 varStr e,f,g,h
 varPtr i,j,k,l
 
