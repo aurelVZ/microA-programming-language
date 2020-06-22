@@ -11,9 +11,28 @@ For more information look : https://aurelsoft.ucoz.com
 
 # List of built-in statemens and functions
 ## variable types :
-**varNum a,b,c,d**  
+**varNum a,b,c,d**  floating point variable type
 
-**varStr e,f,g,h**
+**varStr e,f,g,h**  string variable type
 
-**varPtr i,j,k,l**
+**varPtr i,j,k,l**  int|pointer variable type
+
+## statements :
+
+**print** x , y ,var | QS -> print variable or quoted string on window  
+
+**wColor** r , g , b  -> set window color
+
+**fColor** r , g , b  -> set front color
+
+**bColor** r , g , b  -> set back color
+
+**pset** x , y   -> draw pixel on x,y position
+
+**circle** x , y , r   -> draw circle on x,y position with radius r
+
+**line** x , y , x1 , y1   -> draw line from x,y position to x1,y1 
+
+
+
 
