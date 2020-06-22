@@ -11,7 +11,9 @@ For more information look : https://aurelsoft.ucoz.com
 
 # List of built-in statemens and functions
 ## variable types :
-**varNum a,b,c,d /n**
+**varNum a,b,c,d**  
+
 **varStr e,f,g,h**
+
 **varPtr i,j,k,l**
 
