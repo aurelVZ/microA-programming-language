@@ -7,5 +7,8 @@ programming language  like BASIC,C,PASCAL...etc.
 It is written in o2 basic compiler and as such is very fast ,it use simple
 data structure - array of tokens and array of token types.
 It is easy to modify and use for any purpose.
-For more information look : https://aurelsoft.ucoz.com                                                                                      # List of built-in statemens and functions                                                                                                  
+For more information look : https://aurelsoft.ucoz.com
+
+# List of built-in statemens and functions
+print x,y,var
 
