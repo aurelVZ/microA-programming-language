@@ -9,6 +9,8 @@ data structure - array of tokens and array of token types.
 It is easy to modify and use for any purpose.
 For more information look : https://aurelsoft.ucoz.com
 
+![ScreenShot](https://aurelsoft.ucoz.com/microA_all.png)
+
 # List of built-in statemens and functions
 ## variable types :
 **varNum a,b,c,d**  floating point variable type
