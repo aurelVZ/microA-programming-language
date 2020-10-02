@@ -13,13 +13,14 @@ For more information look : https://aurelsoft.ucoz.com
 
 # List of built-in statemens and functions
 ## variable types :
-**varNum a,b,c,d**  floating point variable type
+**var a,b,c,d**  floating point variable type
 
-**varStr e,f,g,h**  string variable type
+**str e,f,g,h**  string variable type
 
-**varPtr i,j,k,l**  int|pointer variable type
+**ptr i,j,k,l**  int|pointer variable type
 
 ## statements :
+** NOTE : Expressions are not allowed as argument !!!
 
 **print** x , y ,var | QS -> print variable or quoted string on window  
 
@@ -65,7 +66,7 @@ For more information look : https://aurelsoft.ucoz.com
 
 **loops** :
 
-**while**  var **operator** n|s
+**while**  var **operator** n|s  **Logic operator** var **operator** n|s 
 
 **wend** - while end
 
