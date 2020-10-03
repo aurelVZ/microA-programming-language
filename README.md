@@ -3,7 +3,7 @@ micro(A) is a modern and minimal general purpose programming language.
 Tokenizer for micro(A) Interpreter is first part of micro(A) programming language.
 It is written as include file microAT.inc .
 This is a general purpose tokenizer which can be used in any modern imperative 
-programming language .
+programming language.
 It is written in o2 basic compiler and as such is very fast ,it use simple
 data structure - array of tokens and array of token types.
 It is easy to modify and use for any purpose.
