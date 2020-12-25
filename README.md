@@ -71,6 +71,6 @@ Discord chanel : https://discord.gg/qgJ85P
 
 **wend** - while end
 
+**func** - function / type null as subroutine
 
-
-
+**endfn** - function end
