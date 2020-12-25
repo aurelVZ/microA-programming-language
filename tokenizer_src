@@ -1,4 +1,5 @@
-'micro(A) tokenizer by Aurel 21.6.2020
+'microAT -> by Aurel 25.12.2020
+'tokenizer for micro(A) programming language
 Include "microBh.inc"
 INT startTime ,endTime: float procTime  ' GetTickCount -timer init
 declare sub tokenizer( src as string) as INT
@@ -117,14 +118,13 @@ int tn: tn = tokenizer(code)
 */
  'if tn=0 then goto ExitProgram  >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 SUB run_tokenizer(s as string ) as INT
-  
      tn = tokenizer(s)
      If tokerr > 0 
      if tn = 0 then goto ExitTokenizer
      End if
   
 print "Number of tokens: " + str(tn) + crlf + "Number of lines: " + str(lineCount): nTokens = tn
-For n = 1 to tn : bf = bf + tokList[n] + crlf : Next n
+For n = 1 to tn : bf = bf + tokList[n] + " TN: " + str(n) + crlf : Next n
 if lineCount = 0 then goto ExitTokenizer
 'MsgBox bf,"Token List:"  ' show token list
 return 1  ' if OK return 1
