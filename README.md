@@ -10,6 +10,9 @@ It is easy to modify and use for any purpose.
 For more information look : https://aurelsoft.ucoz.com
 Discord chanel : https://discord.gg/qgJ85P
 
+Binary version + source code
+https://aurelsoft.ucoz.com/microAEditor.zip
+
 ![ScreenShot](https://aurelsoft.ucoz.com/microA_show.png)
 
 # List of built-in statemens and functions
