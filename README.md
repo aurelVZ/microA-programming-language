@@ -9,6 +9,8 @@ data structure - array of tokens and array of token types.
 It is easy to modify and use for any purpose.
 For more information look : https://aurelsoft.ucoz.com
 Discord chanel : https://discord.gg/qgJ85P
+You tube videos: https://youtu.be/eZWxhR25Ng4
+https://www.youtube.com/watch?v=2_m-pmXFjT4
 
 Binary version + source code
 https://aurelsoft.ucoz.com/microAEditor.zip
