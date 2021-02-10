@@ -1,5 +1,4 @@
-'microAT -> by Aurel 25.12.2020
-'tokenizer for micro(A) programming language
+'micro(A) tokenizer by Aurel 10.2.2021
 Include "microBh.inc"
 INT startTime ,endTime: float procTime  ' GetTickCount -timer init
 declare sub tokenizer( src as string) as INT
@@ -9,6 +8,7 @@ int tkCOLON=5, tkCOMMA=6, tkLPAREN=7, tkRPAREN=8, tkLBRACKET=9, tkRBRACKET=10
 int tkIDENT = 11 , tkNUMBER = 12 , tkQSTRING = 13, tkCOMMAND =14 ,tkEOL = 15
 int tkEQUAL = 16, tkMORE = 17, tkLESS =18,tkAND=19, tkOR=20, tkNOT = 21
 int tkHASH=22 , tkSSTR=23, tkMOD=24 , tkSEMI=25, tkDOT=26, tkLBRACE=27, tkRBRACE=28
+int tkQUEST=29, tkMONKEY=30 , tkBACKSLAH=31, tkPOWUP=32
 
 string tokList[1024] : int typList[1024]                     'token/type arrays
 int start , p = 1 ,start = p ,tp , tn, n ,ltp=1 ,nTokens     ' nTokens -> number of tokens
@@ -82,8 +82,14 @@ while p <= len(src)
  If asc(ch)=60 : tp++ : tokList[tp] = ch :typList[tp]= tkLESS:    ch="" : p++ : End if  		' < less
  If asc(ch)=61 : tp++ : tokList[tp] = ch :typList[tp]= tkEQUAL:   ch="" : p++ : End if  		' = equal
  If asc(ch)=62 : tp++ : tokList[tp] = ch :typList[tp]= tkMORE:    ch="" : p++ : End if  		' > more(greater)
+ If asc(ch)=63 : tp++ : tokList[tp] = ch :typList[tp]= tkQUEST:    ch="" : p++ : End if  		' > questMark ?
+ If asc(ch)=64 : tp++ : tokList[tp] = ch :typList[tp]= tkMONKEY:    ch="" : p++ : End if  		' > at(monkey) @
+ 
  If asc(ch)=91 : tp++ : tokList[tp] = ch :typList[tp]= tkLBRACKET:ch="" : p++ : Lbrk++ :End if  ' [ Lbracket
+ If asc(ch)=92 : tp++ : tokList[tp] = ch :typList[tp]= tkBACKSLAH:ch="" : p++ : :End if         ' \ backSlash
  If asc(ch)=93 : tp++ : tokList[tp] = ch :typList[tp]= tkRBRACKET:ch="" : p++ : Rbrk++ :End if  ' ] Rbracket
+ 
+ If asc(ch)=94 : tp++ : tokList[tp] = ch :typList[tp]= tkPOWUP:   ch="" : p++ : End if  		' ^ power up
  If asc(ch)=38 : tp++ : tokList[tp] = ch :typList[tp]= tkAND:     ch="" : p++ : End if  		' & AND
  If asc(ch)=124 :tp++ : tokList[tp] = ch :typList[tp]= tkOR:      ch="" : p++ : End if  	     ' | OR
  If asc(ch)=33 : tp++ : tokList[tp] = ch :typList[tp]= tkNOT:     ch="" : p++ : End if  		' ! NOT
