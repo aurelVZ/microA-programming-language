@@ -1,10 +1,10 @@
 'micro(A) Interpreter - with recursive descent token evaluator
-' by AurelSoft(c)     -> last update: 25.12.2020
+' by Aurel - last update: 10.2.2021
 $ filename "microA_Interpreter.exe"                 'compiled to exe
-include "RTL32.inc"                                 ' runtime library
+include "RTL32.inc"
 include "awinh037.inc"                              ' awinh GUI api function
 include "microAT.inc"                               ' tokenizer include
-#lookahead                                          
+#lookahead
 int tc=0 , ierror=0                                 ' token count, interpreting  error
 string token : int tkTyp                            ' define  token as STRING : tkType as INT
 string DQ = chr(34)                                 ' DQ as double quote "
@@ -20,8 +20,8 @@ SYS fseed = 0x12345678 ' seed number
 NumberFormat 6,1,0,0,0,0
 ' global HDC and on screen functions.........................................................
 PAINTSTRUCT ps
-INT hdc ,hdcMem ,hbmMem ,ww , wh, oldBmp, oldBrush, oldPen, oldFont, fColor
-INT backColor
+INT hdc ,hdcMem ,hbmMem ,ww , wh, oldBmp, oldBrush, oldPen, oldFont, fColor,bColor
+INT np, op, nB, oB ,cix ,ciy, cra 
 int msgQuit=0
 'Interpreter Globals .........................................................................
 string kwList[48]   'keyword list 
@@ -35,7 +35,7 @@ kwList[37]="FUNC" : kwList[38]="ENDFN"
 '..............................................................................................
 int tkSTRING = 32, tkFLOAT = 33 , tkPOINTER = 34 , tkIF = 35 , tkELSE = 36, tkENDIF = 37
 int tkWHILE = 38, tkWEND = 39 , tkFOR = 40 , tkTO = 41 , tkSTEP = 42 , tkNEXT = 43
-int tkPRINT = 44 , tkSTR = 45, tkVAL = 46, tkLABEL = 47, tkGOTO = 48 ,tkPSET = 49,tkRND = 50,tkWCOLOR = 51
+int tkPRINT = 44 , tkSTR = 45, tkVAL = 46, tkLABEL = 47, tkGOTO = 48 ,tkPSET = 49, tkRND = 50, tkWCOLOR = 51
 int tkSIN = 52, tkCOS = 53, tkTAN = 54, tkFCOLOR = 55, tkBCOLOR = 56 , tkCIRCLE = 57, tkRECT=58, tkLINE = 59,tkSWAP=60
 int tkRAND = 61 ,tkABS = 62, tkATAN = 63, tkSQR = 64, tkLOG = 65, tkROUND = 66, tkINT = 67
 int tkFUNC = 68, tkENDFN = 69
@@ -45,7 +45,7 @@ int varID = 0, fnID=0
 int varList[1024] : int varType[1024] :string varName[1024]: string varStr[1024] : float varNum[1024] : int varPtr[1024]
 int fnList[1024]  : int fnType[1024]  :string  fnName[1024]                         'functions
 int ifCounter=0, elseCounter=0, endifCounter=0, whileCounter=0,wendCounter=0 ,forCounter=0,nextCounter=0
-int prX,prY,prZ,piX,piY,piZ,piQ ,bkR,bkG,bkB: string prStr ' for print,pset,wcolor
+int prX,prY,prZ,piX,piY,piZ,piQ : string prStr ' for print,pset,wcolor
 int vYES=1, vNO = 0         ' for if
 'stacks label,while,for....................
 int labelStack[1024] , labelCounter=0 : string labelName[1024] : int gotoID[1024] 
@@ -54,9 +54,8 @@ int fnStack[1024] , fnCounter=0
 
 ' Open Window with message loop...
 win = SetWindow("micro(A):",x,y,w,h,0,wstyle)
-InitDrawing(win) 
-'WindowFont( 14, 8, 0, "System")
-'WindowFont( 16, 8, 0, "Windings")
+InitDraw(win) 
+WindowFont( 16, 8, 0, "Consolas")
 Randomize()                        
 'exe name
 
@@ -136,8 +135,8 @@ Select wmsg
           'InvalidateRect(win, 0, 0) 
          EndPaint win,ps
 
-    CASE WM_ERASEBKGND
-      return 1
+    'CASE WM_ERASEBKGND
+     ' return 1
    
 
 	CASE WM_CLOSE
@@ -170,7 +169,8 @@ For i = 1 to numOfTokens
           If ucase(tokList[i]) = kwList[10] : typList[i] = tkTO : End If                     
           If ucase(tokList[i]) = kwList[11] : typList[i] = tkSTEP : End If                    
           If ucase(tokList[i]) = kwList[12] : typList[i] = tkNEXT : nextCounter++ : End If    
-          If ucase(tokList[i]) = kwList[13] : typList[i] = tkPRINT : End If                   
+          If ucase(tokList[i]) = kwList[13] : typList[i] = tkPRINT : End If 
+                  
           If ucase(tokList[i]) = kwList[16] : typList[i] = tkLABEL : End If                   
           If ucase(tokList[i]) = kwList[17] : typList[i] = tkGOTO : End If                   
           If ucase(tokList[i]) = kwList[18] : typList[i] = tkWCOLOR : End If                  
@@ -313,7 +313,7 @@ n=0
                        fID = n                                ' id is n
                        'vTyp = varType[vID]                   ' check type
                        fnList[i] = fID         ' set var list with ID from fnName 
-                       match_name=1 : 'print "Function name found: " + funName + " fnID/pos-> " + str(fID)
+                       match_name=1 :' print "Function name found: " + funName + " fnID/pos-> " + str(fID)
                        exit for       
                     end if                     
                Next n 
@@ -485,7 +485,7 @@ n=0
             End if 
        END IF
 
-       'check RND,SIN,COS,TAN.....................
+       'check RND,SIN,COS,TAN....................................................................................
        IF typList[i] = tkRND
               'check next token as var/num(arg1)
           If typList[i+2] <> tkIDENT and typList[i+2] <> tkNUMBER
@@ -512,7 +512,7 @@ n=0
 			MsgBox "Wrong Argument(1)! -{ " + tokList[i+2] +" }-Line: " + str(lineNum+1),"ERROR~RAND": return 0
           End if
       END IF
-      'check WCOLOR -------------------
+      'check WCOLOR --------------------------------------------------------------------------------------------
       IF typList[i] = tkWCOLOR
          If typList[i+1] <> tkIDENT and typList[i+1] <> tkNUMBER
 			MsgBox "Wrong Argument(1)! -{ " + tokList[i+1] +" }-Line: " + str(lineNum+1),"ERROR~WCOLOR": return 0
@@ -527,7 +527,7 @@ n=0
 			MsgBox "Wrong Argument(3)! -{ " + tokList[i+5] +" }-Line: " + str(lineNum+1),"ERROR~WCOLOR": return 0
          End if       
       END IF
-      'check FCOLOR -------------------
+      'check FCOLOR ---------------------------------------------------------------------------------------------
       IF typList[i] = tkFCOLOR
          If typList[i+1] <> tkIDENT and typList[i+1] <> tkNUMBER
 			MsgBox "Wrong Argument(1)! -{ " + tokList[i+1] +" }-Line: " + str(lineNum+1),"ERROR~FCOLOR": return 0
@@ -542,7 +542,7 @@ n=0
 			MsgBox "Wrong Argument(3)! -{ " + tokList[i+5] +" }-Line: " + str(lineNum+1),"ERROR~FCOLOR": return 0
          End if       
       END IF
-      'check BCOLOR -------------------
+     'check BCOLOR ---------------------------------------------------------------------------------------------
       IF typList[i] = tkBCOLOR
          If typList[i+1] <> tkIDENT and typList[i+1] <> tkNUMBER
 			MsgBox "Wrong Argument(1)! -{ " + tokList[i+1] +" }-Line: " + str(lineNum+1),"ERROR~BCOLOR": return 0
@@ -557,6 +557,7 @@ n=0
 			MsgBox "Wrong Argument(3)! -{ " + tokList[i+5] +" }-Line: " + str(lineNum+1),"ERROR~BCOLOR": return 0
          End if       
       END IF
+
 
 	Next i
 return 1
@@ -614,7 +615,7 @@ Sub tokInterpreter()
             funcName = tokList[tc] :' print "I->Function name:" + funcName
             callPos = tc
             funcID   = fnList[tc]  :' print "I->Func ID:" + str(funcID)   ' get funcID-> call pos  
-           ' print "I-> func_token: " + tokList[funcID-1]   " -->name on pos: " + tokList[funcID] 
+            'print "I-> func_token: " + tokList[funcID-1]   " -->name on pos: " + tokList[funcID] 
                tc = funcID + 2  ' jump to func pos ,skip 2 tokens()
                goto start
         end if  
@@ -661,6 +662,7 @@ Sub tokInterpreter()
 		   'print on window
 		   TextOn (win, prX, prY, strRes)
          'END IF
+
 	case tkPSET
          'IF tok = tkPSET
             gettok() : tok = tkTyp 
@@ -873,7 +875,7 @@ Sub tokInterpreter()
               if vTyp = tkFLOAT : prZ = varNum[vID] : end if
             End if 
             'set window color
-            WindowColor( win, prX, prY, prZ) :' bColor = rgb(prX,prY,prZ) 
+            WinColor( win, prX, prY, prZ) :' bColor = rgb(prX,prY,prZ) 
 
          'END IF
 
@@ -902,40 +904,37 @@ Sub tokInterpreter()
             End if 
             'set front color
             'FrontColor (win, prX, prY, prZ)
-             fColor = RGB (prX,prY,prZ) : ' SetBkColor( hDCMem, bColor)
+             fColor = RGB (prX,prY,prZ) :  SetBkColor( hDCMem, bColor)
               SetTextColor( hDCMem, fColor) 
         ' END IF
-	case tkBCOLOR
-         'exec back color -------------------------
+     case tkBCOLOR
+         'exec front color -------------------------
          'IF tok = tkBCOLOR
             gettok() : tok = tkTyp 
-            If tok = tkNUMBER : bkR = val(tokList[tc]) : End if                                        'if number 
+            If tok = tkNUMBER : prX = val(tokList[tc]) : End if                                        'if number 
             If tok = tkIDENT
                vID = varList[tc] : vTyp = varType[vID] 
-               if vTyp = tkFLOAT : bkR = varNum[vID] : end if 
+               if vTyp = tkFLOAT : prX = varNum[vID] : end if 
             End if                          
             'tc++                                                                                      'skip comma
             tc++ : gettok() : tok = tkTyp 
-            If tok = tkNUMBER : bkG = val(tokList[tc]) : End if                                         'if number 
+            If tok = tkNUMBER : prY = val(tokList[tc]) : End if                                         'if number 
             If tok = tkIDENT 
               vID = varList[tc] : vTyp = varType[vID]
-              if vTyp = tkFLOAT : bkG = varNum[vID] : end if
+              if vTyp = tkFLOAT : prY = varNum[vID] : end if
             End if 
              'tc++                                                                                      'skip comma
             tc++ : gettok() : tok = tkTyp 
-            If tok = tkNUMBER : bkB = val(tokList[tc]) : End if                                         'if number 
+            If tok = tkNUMBER : prZ = val(tokList[tc]) : End if                                         'if number 
             If tok = tkIDENT 
               vID = varList[tc] : vTyp = varType[vID]
-              if vTyp = tkFLOAT : bkB = varNum[vID] : end if
+              if vTyp = tkFLOAT : prZ = varNum[vID] : end if
             End if 
-            'set back color
+            'set front color
             'FrontColor (win, prX, prY, prZ)
-             backColor = RGB(bkR,bkG,bkB) : SetBkColor( hDCMem, backColor)
-              'SetTextColor( hDCMem, fColor)  : SetBkColor( hDCMem, bColor)
-              BitBlt(hDC, 0, 0, ww, wh, hDCMem, 0, 0, SRCCOPY)
-              'ReleaseDC( win, hdc) 
+             bColor = RGB (prX,prY,prZ) :  SetBkColor( hDCMem, bColor)
+              'SetTextColor( hDCMem, fColor) 
         ' END IF
-
 
 	case tkLINE
          'exec_line -------------------------
@@ -969,14 +968,15 @@ Sub tokInterpreter()
             End if 
             'draw line x,y -> x1,y1
             'DrawLine( win, piX, piY, piZ, piQ)
-			int np = CreatePen(PS_SOLID,1,fColor)
-			int op = SelectObject(hdcMem, np)
+			np = CreatePen(PS_SOLID,1,fColor)
+			op = SelectObject(hdcMem, np)
 			MoveToEx hdcMem, piX,piY,Byval 0
 			LineTo hdcMem, piZ, piQ
 			'BitBlt(hDC, 0, 0, ww, wh, hdcMem, 0, 0, SRCCOPY)
 			DeleteObject(op)
-			int hPen = GetStockObject(DC_PEN)
-             SelectObject(hdcMem, hPen)
+			'int hPen = GetStockObject(DC_PEN)
+             'SelectObject(hdcMem, hPen)
+            ReleaseDC( win, hdc)
          'END IF
  
 	case tkRECT
@@ -1030,12 +1030,27 @@ Sub tokInterpreter()
             End if 
              'tc++                                                                                      'skip comma
             tc++ : gettok() : tok = tkTyp 
-            If tok = tkNUMBER : piZ = val(tokList[tc]) : End if                                         'if number 
+            If tok = tkNUMBER : cra = val(tokList[tc]) : End if                                         'if number 
             If tok = tkIDENT 
               vID = varList[tc] : vTyp = varType[vID]
-              if vTyp = tkFLOAT : piZ = varNum[vID] : end if
+              if vTyp = tkFLOAT : cra = varNum[vID] : end if
             End if 
-		  Circle (win,piX,piY,piZ)
+		 ' Circle (win,piX,piY,piZ)
+           '-----------------------------------------------
+          SetBkMode( hDC, 1) 'transparent
+		SetBkColor(hDC, RGB(220,220,250))
+		np = CreatePen(PS_SOLID,1,fColor)  'new pen
+		op = SelectObject(hdcMem, np)
+		nB = CreateSolidBrush( bColor)   'new Brush
+		oB = SelectObject(hdcMem, nB)
+
+		Ellipse hdcMem,piX-cra,piY-cra,cra+piX,cra+piY
+
+		'BitBlt(hDCmem, 0, 0, ww, wh, hdc, 0, 0, SRCCOPY)
+		DeleteObject(SelectObject(hdcMem, op))
+		DeleteObject(SelectObject(hdcMem, oB))
+		ReleaseDC( win, hdc)
+         '----------------------------------------------------
      
 	case else
          'peekmsg
@@ -1079,9 +1094,10 @@ sub term() as float
 float v 
 v = factor()
 
-while token = "*" or token = "/"
+while token = "*" or token = "/" or token = "%"
 if token = "*": gettok() : v = v * factor(): end if
 if token = "/": gettok() : v = v / factor(): end if
+if token = "%": gettok() : v = v \ factor(): end if
 wend
 
 return v
@@ -1187,7 +1203,7 @@ End Sub
 '================================================================
 'print on window
 SUB TextOn(wID as INT,tx as INT,ty as INT,txt as string)
-hdc = GetDC(wID)
+'hdc = GetDC(wID)
 'draw text to screen DC
 TextOut hdcMem,tx,ty,txt,Len(txt)
 'blit screen DC to memDC-------------------------
@@ -1203,7 +1219,7 @@ SUB PixelOn (wID as int , px as int ,py as int)
 'GetSize(wID,0,0,ww,hh)
 SetPixel ( hdcMem, px, py, fColor)
 'blit screen DC to memDC
-BitBlt(hDC, 0, 0, ww, wh, hdcMem, 0, 0, SRCCOPY)
+'BitBlt(hDC, 0, 0, ww, wh, hdcMem, 0, 0, SRCCOPY)
 
 ReleaseDC( wID, hdc)
 END SUB
@@ -1213,8 +1229,8 @@ SUB DrawLine(wID as INT,byval x as INT,byval y as INT,byval x1 as INT,byval y1 a
 'GetSize(wID,0,0,ww,hh)
 'SelectObject(hdc, CreatePen(PS_SOLID,1,fColor))
 'fcolor = rgb(0,0,0)
- int np = CreatePen(PS_SOLID,1,fColor)
- int op = SelectObject(hdcMem, np)
+ np = CreatePen(PS_SOLID,1,fColor)
+ op = SelectObject(hdcMem, np)
 
 MoveToEx hdcMem,x,y,Byval 0
 LineTo hdcMem,x1,y1
@@ -1232,10 +1248,10 @@ SUB Circle (wID as INT,byval cix as INT,byval ciy as INT,byval cra as INT)
 
 SetBkMode( hDC, 1) 'transparent
 SetBkColor(hDC, RGB(220,220,250))
-int np = CreatePen(PS_SOLID,1,fColor)  'new pen
-int op = SelectObject(hdc, np)
-int nB = CreateSolidBrush( bColor)   'new Brush
-int oB = SelectObject(hdc, nB)
+np = CreatePen(PS_SOLID,1,fColor)  'new pen
+op = SelectObject(hdc, np)
+nB = CreateSolidBrush( bColor)   'new Brush
+oB = SelectObject(hdc, nB)
 
 Ellipse hdc,cix-cra,ciy-cra,cra+cix,cra+ciy
 
@@ -1251,17 +1267,17 @@ SUB DrawRect (wID as INT,byval rx1 as INT,byval ry1 as INT,byval rx2 as INT,byva
 'GetSize(wID,0,0,ww,hh)
 
 SetBkMode( hDC, 1) 'transparent
-SetBkColor(hDC, RGB(220,220,250))
-int np = CreatePen(PS_SOLID,1,fColor)  'new pen
-int op = SelectObject(hdc, np)
-int nB = CreateSolidBrush( bColor)   'new Brush
-int oB = SelectObject(hdc, nB)
+SetBkColor(hDC, RGB(0,0,0))
+np = CreatePen(PS_SOLID,1,fColor)  'new pen
+op = SelectObject(hdcMem, np)
+nB = CreateSolidBrush( bColor)   'new Brush
+oB = SelectObject(hdcMem, nB)
 'Rectangle bHdc,x,y,w+x,h+y ...hmmm
-Rectangle (hdc,rx1,ry1,rx2+rx1,ry2+ry1)
+Rectangle (hdcMem,rx1,ry1,rx2+rx1,ry2+ry1)
 
-BitBlt(hDCmem, 0, 0, ww, wh, hdc, 0, 0, SRCCOPY)
-DeleteObject(SelectObject(hdc, op))
-DeleteObject(SelectObject(hdc, oB))
+'BitBlt(hDCmem, 0, 0, ww, wh, hdc, 0, 0, SRCCOPY)
+DeleteObject(SelectObject(hdcMem, op))
+DeleteObject(SelectObject(hdcMem, oB))
 ReleaseDC( wID, hdc)
 END SUB
 ' front color / frontpen...................................................................
@@ -1280,7 +1296,7 @@ SUB FrontColor (wID as INT, penr as INT, peng as INT, penb as INT)
 END SUB
 
 'set window color...............................................
-SUB WindowColor(wID as INT,wr as INT,wg as INT,wb as INT)
+SUB WinColor(wID as INT,wr as INT,wg as INT,wb as INT)
 int backColor = RGB (wr,wg,wb)
 FillSolidRect(wID,0,0,ww,wh,backColor)
 END SUB
@@ -1304,20 +1320,23 @@ End Sub
 '------------------------------------------------------------------------
 Sub WindowFont(int height, width, flag, string fontname)  
 int hFont
+'hDC=GetDC(win)
+ReleaseDC( win, hdcMem)
+'SelectObject hdcMem, hFont
 hFont = CreateFont height,width,0,0,flag,0,0,0,0,0,0,0,0,fontname
 SelectObject hdcMem, hFont
 SetBkMode hdcMem,1
 'blit to memDC
-BitBlt(hDCmem, 0, 0, ww, wh, hdc, 0, 0, SRCCOPY)
+'BitBlt(hDC, 0, 0, ww, wh, hdcMem, 0, 0, SRCCOPY)
 DeleteObject hFont
-ReleaseDC( win, hdc)
+'ReleaseDC( win, hdcMem)
 End Sub
 '================================================================
 ' INIT GDI WINDOW DRAWING
 '================================================================
-SUB InitDrawing(byval wnd as INT)
+SUB InitDraw(byval wnd as INT)
 ''get current size of window
-'ww = w : wh = h    'set sizes to window w,h
+ww = w : wh = h    'set sizes to window w,h
 GetSize(wnd,0,0,ww,wh)
 'print "window size:ww,wh:" + str(ww) +"--" + str(wh)
 'get window DC
