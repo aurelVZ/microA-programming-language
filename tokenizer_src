@@ -1,4 +1,4 @@
-'micro(A) tokenizer by Aurel 10.2.2021
+'micro(A) tokenizer by Aurel 19.2.2021
 Include "microBh.inc"
 INT startTime ,endTime: float procTime  ' GetTickCount -timer init
 declare sub tokenizer( src as string) as INT
@@ -30,7 +30,7 @@ while p <= len(src)
  if asc(ch)=13 : p=p+1 : end if                                        ' skip CR
  if asc(ch)=39                                                         ' skip comment line[ ' ]                                                       
     while asc(ch) <> 10 
-      p++ : ch = mid(src,p,1) : if asc(ch)= 10 then exit while
+      p++ : ch = mid(src,p,1) : if asc(ch)= 10 or asc(ch) = 0 :exit while :end if
     wend
    lineCount++ : tp++ : tokList[tp]="EOL" :typList[tp]= tkEOL: tk="": ch=""  ' add EOL on comment end
    p++: goto endLoop                                                   ' jump to end of loop
