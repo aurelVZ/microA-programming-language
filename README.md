@@ -88,6 +88,7 @@ new winApi functions added :
 **hWparam** var , **hLParam** var
 
 //before you use msessge name you must declare it by ptr statement
+
 ptr wmMouseMove ,wmKeyDown
 
 **WinMsg** msagName
