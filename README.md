@@ -8,8 +8,10 @@ programming language.
 It is written in o2 compiler and as such is very fast ,it use simple
 data structure - array of tokens and array of token types.
 It is easy to modify and use for any purpose.
+
 For more information look : https://aurelsoft.ucoz.com
-Discord chanel : https://discord.com/channels/763709098092134409/764436112990928896
+
+Discord chanel : https://discord.gg/MCMcGr4d
 
 You tube videos: https://youtu.be/eZWxhR25Ng4
 https://www.youtube.com/watch?v=2_m-pmXFjT4
