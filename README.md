@@ -81,6 +81,7 @@ https://aurelsoft.ucoz.com/microAEditor.zip
 **func** - function / type null as subroutine
 
 **endfn** - function end
+
 //testing window messages use : WinMsg msgName .. EndWm
 
 new winApi functions added :
