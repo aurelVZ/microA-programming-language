@@ -85,7 +85,9 @@ https://aurelsoft.ucoz.com/microAEditor.zip
 //testing window messages use : WinMsg msgName .. EndWm
 
 new winApi functions added :
+
 **MouseX** var , **MouseY** var
+
 **hWparam** var , **hLParam** var
 
 //before you use msessge name you must declare it by ptr statement
