@@ -11,8 +11,6 @@ It is easy to modify and use for any purpose.
 
 For more information look : https://aurelsoft.ucoz.com
 
-Discord chanel : https://discord.gg/MCMcGr4d
-
 You tube videos: https://youtu.be/eZWxhR25Ng4
 https://www.youtube.com/watch?v=2_m-pmXFjT4
 
@@ -21,7 +19,7 @@ https://aurelsoft.ucoz.com/microAEditor.zip
 
 ![ScreenShot](https://aurelsoft.ucoz.com/microA_show.png)
 
-# List of built-in statemens and functions
+# List of built-in statements and functions
 ## variable types :
 **var a,b,c,d**  floating point variable type
 
@@ -92,7 +90,7 @@ new winApi functions added :
 
 **hWparam** var , **hLParam** var
 
-//before you use msessge name you must declare it by ptr statement
+//before you use message name you must declare it by ptr statement
 
 ptr wmMouseMove ,wmKeyDown
 
