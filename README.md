@@ -1,6 +1,6 @@
 # micro(A) programming language
 micro(A) is a modern and minimal general purpose programming language.
-It is Easy to Use Programming Language.
+It is Easy to Use BASIC like Programming Language.
 Tokenizer for micro(A) Interpreter is first part of micro(A) programming language.
 It is written as include file microAT.inc .
 This is a general purpose tokenizer which can be used in any modern imperative 
