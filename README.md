@@ -17,7 +17,7 @@ https://www.youtube.com/watch?v=2_m-pmXFjT4
 Binary version + source code
 https://aurelsoft.ucoz.com/microAEditor.zip
 
-![ScreenShot](https://aurelsoft.ucoz.com/microA_shot.png)
+![ScreenShot](https://aurelsoft.ucoz.com/logoA3.png)
 
 # List of built-in statements and functions
 ## variable types :
