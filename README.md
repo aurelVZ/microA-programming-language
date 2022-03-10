@@ -19,6 +19,7 @@ Binary version + source code
 https://aurelsoft.ucoz.com/microAEditor.zip
 
 ![ScreenShot](https://aurelsoft.ucoz.com/logoA3.png)
+![ScreenShot](https://aurelsoft.ucoz.com/microA_Interpreter.png)
 
 # List of built-in statements and functions
 ## variable types :
