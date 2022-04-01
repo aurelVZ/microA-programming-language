@@ -1,5 +1,7 @@
 'micro(A) Interpreter - with recursive descent token evaluator
-' by Aurel - last update: 10.2.2021
+'3 PASS processing -> tokenizer,parser,executor
+'public artistic licence ,copyright (c)AurelSoft
+' by Aurel - last update: 1.4.2022
 $ filename "microA_Interpreter.exe"                 'compiled to exe
 include "RTL32.inc"
 include "awinh037.inc"                              ' awinh GUI api function
@@ -13,48 +15,75 @@ Declare Function SetPixelV Lib "gdi32.dll" (ByVal hdc As sys, ByVal x As Long, B
 Declare Function SetStretchBltMode Lib "gdi32.dll" (ByVal hdc As sys, ByVal nStretchMode As Long) As Long
 Declare Function StretchBlt        Lib "gdi32.dll" (ByVal hdc As sys, ByVal x As Long, ByVal y As Long, ByVal nWidth As Long, ByVal nHeight As Long, ByVal hSrcDC As sys, ByVal xSrc As Long, ByVal ySrc As Long, ByVal nSrcWidth As Long, ByVal nSrcHeight As Long, ByVal dwRop As Long) As Long
 '*********************************************************************
-'globals
-INT win,x=0,y=0,w=640,h=580,wstyle = WS_MINMAXSIZE
+'globals -> window size 
+INT win,x=0,y=0, w = 800, h = 600 ,wstyle = WS_MINMAXSIZE
 INT button0,b0ID=100
 SYS fseed = 0x12345678 ' seed number
 NumberFormat 6,1,0,0,0,0
 ' global HDC and on screen functions.........................................................
 PAINTSTRUCT ps
-INT hdc ,hdcMem ,hbmMem ,ww , wh, oldBmp, oldBrush, oldPen, oldFont, fColor,bColor
+INT hdc, hdcMem, hdcImg, hbmMem, ww, wh, oldBmp, oldBrush, oldPen, oldFont, fColor,bColor ,selBmp, hImg
 INT np, op, nB, oB ,cix ,ciy, cra 
 int msgQuit=0
 'Interpreter Globals .........................................................................
-string kwList[48]   'keyword list 
-kwList[1] = "VAR" : kwList[2] = "STR" : kwList[3] = "PTR" : kwList[4] = "IF" : kwList[5] = "ELSE" : kwList[6] = "ENDIF"
-kwList[7] = "WHILE" : kwList[8] = "WEND" : kwList[9] = "FOR" : kwList[10] = "TO" : kwList[11] = "STEP" : kwList[12] = "NEXT"
-kwList[13]="PRINT" : kwList[14]="STRS " : kwList[15]="VAL" :  kwList[16]="LABEL" :  kwList[17]="GOTO" 
+string kwList[64]   'keyword list 
+kwList[1] ="VAR" : kwList[2] = "STR" : kwList[3] = "PTR" : kwList[4] = "IF" : kwList[5] = "ELSE" : kwList[6] = "ENDIF"
+kwList[7] ="WHILE" : kwList[8] = "WEND" : kwList[9] = "FOR" : kwList[10] = "TO" : kwList[11] = "STEP" : kwList[12] = "NEXT"
+kwList[13]="PRINT" : kwList[14]="STRS" : kwList[15]="VAL" :  kwList[16]="LABEL" :  kwList[17]="GOTO" 
 kwList[18]="WCOLOR" : kwList[19]="FCOLOR" : kwList[20]="BCOLOR" : kwList[21]="PSET": kwList[22]="CIRCLE" : kwList[23]="RECT" 
 kwList[24]="LINE" : kwList[25]="RND" : kwList[26]="SIN" : kwList[27]="COS": kwList[28]="TAN" :kwList[29]="SWAP" :kwList[30]="RAND"
 kwList[31]="ABS" : kwList[32]="ATAN" : kwList[33]="SQR" : kwList[34]="LOG" : kwList[35]="ROUND" : kwList[36]="INT"
-kwList[37]="FUNC" : kwList[38]="ENDFN"
+kwList[37]="FUNC" : kwList[38]="ENDFN" : kwList[39]="FRAC" : kwList[40]="WINMSG" : kwList[41]="ENDWM" 
+kwList[42]="MOUSEX" : kwList[43]="MOUSEY" : kwList[44]="HWPARAM" :  kwList[45]="HLPARAM" '46,47,48,49,50
+kwList[51]="LOADIMG" :kwList[52]="SHOWIMG" : kwList[53]="SHOWIMGT"
+kwList[60]="MSTR" :kwList[61]="LSTR" : kwList[62]="RSTR"
+
 '..............................................................................................
 int tkSTRING = 32, tkFLOAT = 33 , tkPOINTER = 34 , tkIF = 35 , tkELSE = 36, tkENDIF = 37
 int tkWHILE = 38, tkWEND = 39 , tkFOR = 40 , tkTO = 41 , tkSTEP = 42 , tkNEXT = 43
-int tkPRINT = 44 , tkSTR = 45, tkVAL = 46, tkLABEL = 47, tkGOTO = 48 ,tkPSET = 49, tkRND = 50, tkWCOLOR = 51
+int tkPRINT = 44 , tkSTRS = 45, tkVAL = 46, tkLABEL = 47, tkGOTO = 48 ,tkPSET = 49, tkRND = 50, tkWCOLOR = 51
 int tkSIN = 52, tkCOS = 53, tkTAN = 54, tkFCOLOR = 55, tkBCOLOR = 56 , tkCIRCLE = 57, tkRECT=58, tkLINE = 59,tkSWAP=60
 int tkRAND = 61 ,tkABS = 62, tkATAN = 63, tkSQR = 64, tkLOG = 65, tkROUND = 66, tkINT = 67
-int tkFUNC = 68, tkENDFN = 69
+int tkFUNC = 68, tkENDFN = 69 ,tkFRAC = 70, tkWINMSG = 71,tkENDWM = 72, tkMOUSEX = 73, tkMOUSEY = 74
+int tkHWPARAM = 75, tkHLPARAM = 76 ' 77,78,79,90
+int tkLOADIMG = 91,tkSHOWIMG = 92,tkSHOWIMGT = 93
+int tkMIDSTR = 100, tkLEFTSTR = 101 , tkRIGHTSTR = 102
 
 'Global Variable,function,ID etc array ................................................................
 int varID = 0, fnID=0
 int varList[1024] : int varType[1024] :string varName[1024]: string varStr[1024] : float varNum[1024] : int varPtr[1024]
 int fnList[1024]  : int fnType[1024]  :string  fnName[1024]                         'functions
-int ifCounter=0, elseCounter=0, endifCounter=0, whileCounter=0,wendCounter=0 ,forCounter=0,nextCounter=0
-int prX,prY,prZ,piX,piY,piZ,piQ : string prStr ' for print,pset,wcolor
-int vYES=1, vNO = 0         ' for if
-'stacks label,while,for....................
+'arrays ..for now 8 for each type ........................................................................
+int arrayID[1024]         'array ID -> hold array index(identifier)
+'string arrayName[1024]   'array stack hold array name 
+'int    arrayType[1024]   'array type 1->var , 2->str ,3-ptr
+'int    arraySize[1024]   'array size
+'int    arrayIndex[1024]  'array Index/element -> hold array index/element
+float  arr01[4096],arr02[4096],arr03[4096],arr04[4096],arr05[4096],arr06[4096],arr07[4096],arr08[4096]
+
+string arr01[4096],arr02[4096],arr03[4096],arr04[4096],arr05[4096],arr06[4096],arr07[4096],arr08[4096]
+
+int    arr01[4096],arr02[4096],arr03[4096],arr04[4096],arr05[4096],arr06[4096],arr07[4096],arr08[4096]
+
+int ifCounter=0, endifCounter=0, whileCounter=0,wendCounter=0 ,forCounter=0,nextCounter=0
+int prX,prY,prZ,piX,piY,piZ,piQ ,backBlue,backGreen,backRed, winBlue, winGreen, winRed
+int frontRed,frontGreen,frontBlue, lineX1,lineY1,lineX2,lineY2
+string prStr ' for print
+int vYES=1, vNO = 0                            ' for if
+int hMouseX,hMouseY                            ' for mouse pointer coordinate
+int hWParam,hLParam                            ' for wparam, lparam handlers
+'stacks label,while,for...................................................................
 int labelStack[1024] , labelCounter=0 : string labelName[1024] : int gotoID[1024] 
 int whileStack[1024] , whileCounter=0 , whileID[1024]
-int fnStack[1024] , fnCounter=0
+int fnStack[1024] , fnCounter=0, endFnCounter=0 ,wMsgCounter=0,endWMsgCounter=0
+'images id
+int imgID[1024], imgHDC[64]
+' win messge token positions.............................................................
+int pos_wmMouseMove , pos_wmKeyDown , pos_wmLeftBDown, pos_wmTimer
 
-' Open Window with message loop...
-win = SetWindow("micro(A):",x,y,w,h,0,wstyle)
-InitDraw(win) 
+' Open Window with message loop ======================================================
+win = SetWindow("micro(A):", x , y , w , h , 0 , wstyle)
+InitDraw(win) :  'hdcImg = CreateCompatibleDC(0)
 WindowFont( 16, 8, 0, "Consolas")
 Randomize()                        
 'exe name
@@ -114,15 +143,14 @@ if pscan = 1
    'MsgBox "PreScan:OK!" ,"Continue..."  
    tokInterpreter()                  ' run token-interpreter
 Else
-   MsgBox "END" ,"Program Exit!"
-   
+   MsgBox "END" ,"Program Exit!"  
 End if
 
 ExitProgram:
 
 '================================================================
 Wait()  '/// message loop ///
-'===========================================================================================
+'================================================================
 Function WndProc (sys hwnd,wmsg,wparam,lparam) as sys callback
 SELECT hwnd
 CASE win
@@ -137,7 +165,30 @@ Select wmsg
 
     'CASE WM_ERASEBKGND
      ' return 1
-   
+'processing windows messages by Interpreter..................................................
+	CASE WM_MOUSEMOVE
+		hMouseX = LoWord(lParam)
+		hMouseY = HiWord(lParam)
+         'call block winMsg
+         if pos_wmMouseMove > 0
+            tc = pos_wmMouseMove : tokInterpreter()          
+        end if
+'keybord event...............................................................................
+	CASE WM_KEYDOWN
+         hWParam = wParam
+         'call block winMsg
+         if pos_wmKeyDown > 0
+            tc = pos_wmKeyDown : tokInterpreter()
+            tc=0
+         end if
+'............................................................................................
+	CASE WM_TIMER
+         'call block winMsg
+         if pos_wmTimer > 0
+            tc = pos_wmTimer : tokInterpreter()
+            tc=0
+         end if
+'............................................................................................
 
 	CASE WM_CLOSE
 	CloseWindow(win)
@@ -155,21 +206,23 @@ END FUNCTION
 Sub preScan() as int
 'MsgBox "OK..." ," PASS 2"
 int i,f, numOfTokens = nTokens ,lineNum=1 ,varID=0, vID, n ,vTyp ,fID   ' numofTokens as local/reset global nTokens
-string vName : int match_name : string gotoName : string funName
-whileCounter=0 : fnCounter=0 : fnID =0
+string vName : int match_name, wm_Name : string gotoName : string funName, msgName
+whileCounter=0 :wendCounter=0: fnCounter=0 :endFnCounter=0: fnID =0 : ifCounter=0 : endifCounter=0 
 
 'record keywords from token list ...........................................
 For i = 1 to numOfTokens
-          If ucase(tokList[i]) = kwList[4]  : typList[i] = tkIF : ifCounter++ : End If        
-          If ucase(tokList[i]) = kwList[5]  : typList[i] = tkELSE : elseCounter++ : End If    
+          If ucase(tokList[i]) = kwList[4]  : typList[i] = tkIF : ifCounter++  : End If        
+          If ucase(tokList[i]) = kwList[5]  : typList[i] = tkELSE  : End If    
           If ucase(tokList[i]) = kwList[6]  : typList[i] = tkENDIF : endifCounter++ : End If  
-          If ucase(tokList[i]) = kwList[7]  : typList[i] = tkWHILE : End If                   
-          If ucase(tokList[i]) = kwList[8]  : typList[i] = tkWEND : End If                   
-          If ucase(tokList[i]) = kwList[9]  : typList[i] = tkFOR : forCounter++ : End If     
-          If ucase(tokList[i]) = kwList[10] : typList[i] = tkTO : End If                     
-          If ucase(tokList[i]) = kwList[11] : typList[i] = tkSTEP : End If                    
-          If ucase(tokList[i]) = kwList[12] : typList[i] = tkNEXT : nextCounter++ : End If    
+          If ucase(tokList[i]) = kwList[7]  : typList[i] = tkWHILE : whileCounter++ : End If                   
+          If ucase(tokList[i]) = kwList[8]  : typList[i] = tkWEND  : wendCounter++  : End If                   
+          If ucase(tokList[i]) = kwList[9]  : typList[i] = tkFOR   : forCounter++   : End If     
+          If ucase(tokList[i]) = kwList[10] : typList[i] = tkTO    : End If                     
+          If ucase(tokList[i]) = kwList[11] : typList[i] = tkSTEP  : End If                    
+          If ucase(tokList[i]) = kwList[12] : typList[i] = tkNEXT  : nextCounter++ : End If    
           If ucase(tokList[i]) = kwList[13] : typList[i] = tkPRINT : End If 
+          If ucase(tokList[i]) = kwList[14] : typList[i] = tkSTRS  : End If 
+          If ucase(tokList[i]) = kwList[15] : typList[i] = tkVAL   : End If 
                   
           If ucase(tokList[i]) = kwList[16] : typList[i] = tkLABEL : End If                   
           If ucase(tokList[i]) = kwList[17] : typList[i] = tkGOTO : End If                   
@@ -192,12 +245,28 @@ For i = 1 to numOfTokens
 		 If ucase(tokList[i]) = kwList[34] : typList[i] = tkLOG : End If
 		 If ucase(tokList[i]) = kwList[35] : typList[i] = tkROUND : End If
 		 If ucase(tokList[i]) = kwList[36] : typList[i] = tkINT : End If
-		 If ucase(tokList[i]) = kwList[37] : typList[i] = tkFUNC : End If
-          If ucase(tokList[i]) = kwList[38] : typList[i] = tkENDFN : End If
+		 If ucase(tokList[i]) = kwList[37] : typList[i] = tkFUNC : fnCounter++        : End If
+          If ucase(tokList[i]) = kwList[38] : typList[i] = tkENDFN : endFnCounter++    : End If
+          If ucase(tokList[i]) = kwList[39] : typList[i] = tkFRAC : End If
+		 If ucase(tokList[i]) = kwList[40] : typList[i] = tkWINMSG : wMsgCounter++    : End If
+          If ucase(tokList[i]) = kwList[41] : typList[i] = tkENDWM : endWMsgCounter++  : End If
+          If ucase(tokList[i]) = kwList[42] : typList[i] = tkMOUSEX : End If
+          If ucase(tokList[i]) = kwList[43] : typList[i] = tkMOUSEY : End If 
+		 If ucase(tokList[i]) = kwList[44] : typList[i] = tkHWPARAM : End If
+		 If ucase(tokList[i]) = kwList[45] : typList[i] = tkHLPARAM : End If
+         
+          If ucase(tokList[i]) = kwList[51] : typList[i] = tkLOADIMG : End If
+		 If ucase(tokList[i]) = kwList[52] : typList[i] = tkSHOWIMG : End If
+          If ucase(tokList[i]) = kwList[53] : typList[i] = tkSHOWIMGT : End If
+
+          If ucase(tokList[i]) = kwList[60] : typList[i] = tkMIDSTR   : End If
+          If ucase(tokList[i]) = kwList[61] : typList[i] = tkLEFTSTR  : End If
+          If ucase(tokList[i]) = kwList[62] : typList[i] = tkRIGHTSTR : End If
+
 
 Next i
 i=0
-'search for labels in code and if exits then record them.....................
+'search for labels in code and if exist then record them.....................
 For n = 1 to numOfTokens
 	IF typList[n] = tkLABEL
           If typList[n+1] <> tkIDENT
@@ -212,7 +281,7 @@ For n = 1 to numOfTokens
 Next n
 n=0
 '
-'search for function in code and if exits then record them.....................
+'search for function in code and if exist  then record them.....................
 'example func myFunc ( ) 
 For n = 1 to numOfTokens
 	IF typList[n] = tkFUNC
@@ -221,7 +290,7 @@ For n = 1 to numOfTokens
           End if
           ' null func -> subroutine as -> FUNC myFunc<-1 (<-2 )<-3 
           If typList[n+1] = tkIDENT and typList[n+2] = tkLPAREN and typList[n+3] = tkRPAREN
-             fnCounter++  ': print "Function_Count:"  +  str(fnCounter)       'func counter = tok pos
+             'fnCounter++  ': print "Function_Count:"  +  str(fnCounter)       'func counter = tok pos
              fnName[n+1] = lcase(tokList[n+1]) 'set (LCASE)funcName [index] as token pos with function name
              fnID = n+1 : fnList[n+1] = fnID : ' fnlist[index] hold function token position 
              'print "PASS2:FUNC ID:" + str( fnList[fnID] ) ' show fnID value -> func pos
@@ -239,7 +308,7 @@ n=0
 		IF typList[i] = tkIDENT
            If ucase(tokList[i]) = kwList[1]: typList[i] = tkFLOAT  'if varNUM ...........................
               if typList[i+1] <> tkIDENT 'check err
-                 MsgBox "Missing variable after VARNUM! line: " + str(lineNum),"ERROR": return 0
+                 MsgBox "Missing variable after VAR! line: " + str(lineNum),"ERROR": return 0
 			else
               i=i+1 ' next token
                While typList[i] <> tkCOLON And typList[i] <> tkEOL  'store num variable              -low case var name-
@@ -253,11 +322,11 @@ n=0
           End if  ' endOf varNUM..........................................................................
           If ucase(tokList[i]) = kwList[2]: typList[i] = tkSTRING  'if varSTR ...........................
               if typList[i+1] <> tkIDENT 'check err
-                 MsgBox "Missing variable after VARSTR! line: " + str(lineNum),"ERROR": return 0
+                 MsgBox "Missing variable after STR! line: " + str(lineNum),"ERROR": return 0
 			else
               i=i+1 ' next token
                While typList[i] <> tkCOLON And typList[i] <> tkEOL  'store str variable
-                  If typList[i] = tkIDENT : varID = varID + 1 : varList[i] = varID :: varName[varID] = lcase(tokList[i]): varType[varID] = tkSTRING: varStr[varID] = "" 
+                  If typList[i] = tkIDENT : varID = varID + 1 : varList[i] = varID : varName[varID] = lcase(tokList[i]): varType[varID] = tkSTRING: varStr[varID] = "" 
                      'MsgBox "Variable name: " + tokList[i] ,"variable->STR"
                   End if
                 i++
@@ -266,7 +335,7 @@ n=0
               End if  ' endOf varSTR.......................................
             If ucase(tokList[i]) = kwList[3]: typList[i] = tkPOINTER  'if varPTR ...........................
               if typList[i+1] <> tkIDENT 'check err
-                 MsgBox "Missing variable after VARPTR! line: " + str(lineNum),"ERROR": return 0
+                 MsgBox "Missing variable after PTR! line: " + str(lineNum),"ERROR": return 0
 			else
               i=i+1 ' next token
                While typList[i] <> tkCOLON And typList[i] <> tkEOL  'store ptr variable
@@ -301,10 +370,11 @@ n=0
                if vTyp=0 : MsgBox "Variable ID not found! -{ " + vName +" }-Line: " + str(lineNum),"ERROR": return 0: end if
               end if        
        END IF
-       ' if variable is outside of declaration and continue with LParen & RParen like myVar() then is FUNCTION
+       ' if variable is outside of declaration and continue with LParen & RParen like myVar() then is FUNCTION call
         ' search for function name and return function ID     
        IF typList[i] = tkIDENT and typList[i-1] <> tkLABEL and typList[i-1] <> tkGOTO  and typList[i-1] <> tkFUNC ' myfn , ( , )
-          if typList[i+1] = tkLPAREN 
+          match_name = 1
+          if typList[i+1] = tkLPAREN and typList[i+2] <> tkIDENT
               funName = tokList[i] : match_name=0
               'loop to find func name,id,typ
                For n = 1 to 1024
@@ -319,10 +389,49 @@ n=0
                Next n 
            
              ' if func name not found then error  
-            if  match_name <> 1 :  MsgBox "Function not found! -{ " + funName +" }-Line: " + str(lineNum),"ERROR": return 0: end if 
+            if  match_name <> 1 :  MsgBox "Function not found! -{ " + funName +" }-Line: " + str(lineNum),"FN_ERROR": return 0: end if 
             end if
       END IF
       
+       'check WINMSG -> winMsg msgName -> winMSG ptr<INT>(wmMouseMove).......................................................
+       IF typList[i] = tkWINMSG
+		 'check next token as ptr/num(arg1)
+          If typList[i+1] <> tkIDENT 
+			MsgBox "Invalid Argument(1)! -{ " + tokList[i+1] +" }-Line: " + str(lineNum+1),"ERROR~WIN_MSG": return 0
+          End if
+
+          If ucase(tokList[i+1]) = "WMMOUSEMOVE" :wm_Name=1 : pos_wmMouseMove = i+1 : End If  'set msg position
+		 If ucase(tokList[i+1]) = "WMKEYDOWN"   :wm_Name=1 : pos_wmKeyDown   = i+1 : End If 
+		 If ucase(tokList[i+1]) = "WMTIMER"     :wm_Name=1 : pos_wmTimer     = i+1 : End If  
+          
+		 ' if msg name not found then error
+          msgName = tokList[i+1]  
+          if  wm_name <> 1 :  MsgBox "Message not valid! -{ " + msgName +" }-Line: " + str(lineNum),"ERROR": return 0: end if
+       END IF
+       
+       'check MOUSEX var, MOUSEY var-----------------------------------------------------------------------------------------
+       IF  typList[i] = tkMOUSEX
+           If typList[i+1] <> tkIDENT 
+			MsgBox "Invalid Argument(1)! -{ " + tokList[i+1] +" }-Line: " + str(lineNum+1),"ERROR~MOUSEX": return 0
+          End if
+       END IF
+       IF  typList[i] = tkMOUSEY
+           If typList[i+1] <> tkIDENT 
+			MsgBox "Invalid Argument(1)! -{ " + tokList[i+1] +" }-Line: " + str(lineNum+1),"ERROR~MOUSEY": return 0
+          End if
+       END IF
+
+	  'check WPARAM var, LPARAM var-----------------------------------------------------------------------------------------
+       IF  typList[i] = tkHWPARAM
+           If typList[i+1] <> tkIDENT 
+			MsgBox "Invalid Argument(1)! -{ " + tokList[i+1] +" }-Line: " + str(lineNum+1),"ERROR~HWPARAM": return 0
+          End if
+       END IF
+       IF  typList[i] = tkHLPARAM
+           If typList[i+1] <> tkIDENT 
+			MsgBox "Invalid Argument(1)! -{ " + tokList[i+1] +" }-Line: " + str(lineNum+1),"ERROR~HLPARAM": return 0
+          End if
+       END IF
 
 
        'check PRINT x(+1),(+2)y(+3),(+4)var(+5) ..var= varName|number|quoted string ----------------------------------------------
@@ -384,7 +493,7 @@ n=0
       END IF
 
 	 IF typList[i] = tkRECT
-              'check line 1,2,3,4
+              'check rect 1,2,3,4
           If typList[i+1] <> tkIDENT and typList[i+1] <> tkNUMBER
 			MsgBox "Wrong Argument(1)! -{ " + tokList[i+1] +" }-Line: " + str(lineNum+1),"ERROR~RECT": return 0
           End if
@@ -481,7 +590,9 @@ n=0
                        exit for
                    end if 
                next n
-                  if match_name=0 : print "cannot found label :" + tokList[i+1] :  return 0 :end if
+              If match_name=0 
+                MsgBox "Cannot found label :" + tokList[i+1] + " -Line: " + str(lineNum+1),"ERROR~GOTO" :  return 0 
+              End If
             End if 
        END IF
 
@@ -512,63 +623,171 @@ n=0
 			MsgBox "Wrong Argument(1)! -{ " + tokList[i+2] +" }-Line: " + str(lineNum+1),"ERROR~RAND": return 0
           End if
       END IF
+
+        'check STRS()..VAL()..................................................................................
+       IF typList[i] = tkSTRS
+         'print "STRS().found!"
+          If typList[i+2] <> tkIDENT and typList[i+2] <> tkNUMBER
+			MsgBox "Wrong Argument(1)! -{ " + tokList[i+2] +" }-Line: " + str(lineNum+1),"ERROR~STRS": return 0
+          End if
+       END IF
+
       'check WCOLOR --------------------------------------------------------------------------------------------
       IF typList[i] = tkWCOLOR
          If typList[i+1] <> tkIDENT and typList[i+1] <> tkNUMBER
-			MsgBox "Wrong Argument(1)! -{ " + tokList[i+1] +" }-Line: " + str(lineNum+1),"ERROR~WCOLOR": return 0
+			MsgBox "Wrong Argument(1)! -{ " + tokList[i+1] +" }-Line: " + str(lineNum+1),"ERR~WCOLOR": return 0
          End if
          If typList[i+2] <> tkCOMMA or typList[i+4] <> tkCOMMA '2 & 4
-			MsgBox "Comma Separator ? -{ " + tokList[i+2] +" }-Line: " + str(lineNum+1),"ERROR~WCOLOR": return 0
+			MsgBox "Comma Separator ? -{ " + tokList[i+2] +" }-Line: " + str(lineNum+1),"ERR~WCOLOR": return 0
          End if
          If typList[i+3] <> tkIDENT and typList[i+3] <> tkNUMBER '3
-			MsgBox "Wrong Argument(2)! -{ " + tokList[i+3] +" }-Line: " + str(lineNum+1),"ERROR~WCOLOR": return 0
+			MsgBox "Wrong Argument(2)! -{ " + tokList[i+3] +" }-Line: " + str(lineNum+1),"ERR~WCOLOR": return 0
          End if 
          If typList[i+5] <> tkIDENT and typList[i+5] <> tkNUMBER
-			MsgBox "Wrong Argument(3)! -{ " + tokList[i+5] +" }-Line: " + str(lineNum+1),"ERROR~WCOLOR": return 0
+			MsgBox "Wrong Argument(3)! -{ " + tokList[i+5] +" }-Line: " + str(lineNum+1),"ERR~WCOLOR": return 0
          End if       
       END IF
       'check FCOLOR ---------------------------------------------------------------------------------------------
       IF typList[i] = tkFCOLOR
          If typList[i+1] <> tkIDENT and typList[i+1] <> tkNUMBER
-			MsgBox "Wrong Argument(1)! -{ " + tokList[i+1] +" }-Line: " + str(lineNum+1),"ERROR~FCOLOR": return 0
+			MsgBox "Wrong Argument(1)! -{ " + tokList[i+1] +" }-Line: " + str(lineNum+1),"ERR~FCOLOR": return 0
          End if
          If typList[i+2] <> tkCOMMA or typList[i+4] <> tkCOMMA '2 & 4
-			MsgBox "Comma Separator ? -{ " + tokList[i+2] +" }-Line: " + str(lineNum+1),"ERROR~FCOLOR": return 0
+			MsgBox "Comma Separator ? -{ " + tokList[i+2] +" }-Line: " + str(lineNum+1),"ERR~FCOLOR": return 0
          End if
          If typList[i+3] <> tkIDENT and typList[i+3] <> tkNUMBER '3
-			MsgBox "Wrong Argument(2)! -{ " + tokList[i+3] +" }-Line: " + str(lineNum+1),"ERROR~FCOLOR": return 0
+			MsgBox "Wrong Argument(2)! -{ " + tokList[i+3] +" }-Line: " + str(lineNum+1),"ERR~FCOLOR": return 0
          End if 
          If typList[i+5] <> tkIDENT and typList[i+5] <> tkNUMBER
-			MsgBox "Wrong Argument(3)! -{ " + tokList[i+5] +" }-Line: " + str(lineNum+1),"ERROR~FCOLOR": return 0
+			MsgBox "Wrong Argument(3)! -{ " + tokList[i+5] +" }-Line: " + str(lineNum+1),"ERR~FCOLOR": return 0
          End if       
       END IF
      'check BCOLOR ---------------------------------------------------------------------------------------------
       IF typList[i] = tkBCOLOR
          If typList[i+1] <> tkIDENT and typList[i+1] <> tkNUMBER
-			MsgBox "Wrong Argument(1)! -{ " + tokList[i+1] +" }-Line: " + str(lineNum+1),"ERROR~BCOLOR": return 0
+			MsgBox "Wrong Argument(1)! -{ " + tokList[i+1] +" }-Line: " + str(lineNum+1),"ERR~BCOLOR": return 0
          End if
          If typList[i+2] <> tkCOMMA or typList[i+4] <> tkCOMMA '2 & 4
-			MsgBox "Comma Separator ? -{ " + tokList[i+2] +" }-Line: " + str(lineNum+1),"ERROR~BCOLOR": return 0
+			MsgBox "Comma Separator ? -{ " + tokList[i+2] +" }-Line: " + str(lineNum+1),"ERR~BCOLOR": return 0
          End if
          If typList[i+3] <> tkIDENT and typList[i+3] <> tkNUMBER '3
-			MsgBox "Wrong Argument(2)! -{ " + tokList[i+3] +" }-Line: " + str(lineNum+1),"ERROR~BCOLOR": return 0
+			MsgBox "Wrong Argument(2)! -{ " + tokList[i+3] +" }-Line: " + str(lineNum+1),"ERR~BCOLOR": return 0
          End if 
          If typList[i+5] <> tkIDENT and typList[i+5] <> tkNUMBER
-			MsgBox "Wrong Argument(3)! -{ " + tokList[i+5] +" }-Line: " + str(lineNum+1),"ERROR~BCOLOR": return 0
+			MsgBox "Wrong Argument(3)! -{ " + tokList[i+5] +" }-Line: " + str(lineNum+1),"ERR~BCOLOR": return 0
          End if       
       END IF
 
+      'check LoadImage LoadImage (INT hInst,STR lpsz, INT dwType,INT Width,INT Height, INT Flags )
+      'himg  = LoadImage(0, "micData\mImg1.bmp", 0, 16, 16, 24)    ...load bitmap
+      ' icon = LoadImage(0, "micData\icOpen.ico", 1, 32, 32, 24)  ...load icon
+      'syntax-> LoadImg (1)hImg , (3)str "img.bmp" ,(5)imgType , (7)w , (9)h, (11)colorFlags
+      IF typList[i] = tkLOADIMG
+              'check LoadImg 1,2,3,4
+          If typList[i+1] <> tkIDENT  'hImg image handler ,must be variable!
+			MsgBox "Wrong Argument(1)! -{ " + tokList[i+1] +" }-Line: " + str(lineNum+1),"ERR-LoadImg": return 0
+          End if
+          If typList[i+2] <> tkCOMMA  '2 comma
+			MsgBox "Comma Separator ? -{ " + tokList[i+2] +" }-Line: " + str(lineNum+1),"ERR-LoadImg": return 0
+          End if
+           If typList[i+3] <> tkIDENT and typList[i+3] <> tkQSTRING '3
+			MsgBox "Wrong Argument(2)! -{ " + tokList[i+3] +" }-Line: " + str(lineNum+1),"ERR-LoadImg": return 0
+          End if 
+          If typList[i+4] <> tkCOMMA  '4 comma
+			MsgBox "Comma Separator ? -{ " + tokList[i+4] +" }-Line: " + str(lineNum+1),"ERR-LoadImg": return 0
+          End if
+           If typList[i+5] <> tkIDENT and typList[i+5] <> tkNUMBER '5
+			MsgBox "Wrong Argument(3)! -{ " + tokList[i+5] +" }-Line: " + str(lineNum+1),"ERR-LoadImg": return 0
+          End if
+          If typList[i+6] <> tkCOMMA  '6 comma
+			MsgBox "Comma Separator ? -{ " + tokList[i+6] +" }-Line: " + str(lineNum+1),"ERR-LoadImg": return 0
+          End if 
+          If typList[i+7] <> tkIDENT and typList[i+7] <> tkNUMBER '7
+			MsgBox "Wrong Argument(4)! -{ " + tokList[i+7] +" }-Line: " + str(lineNum+1),"ERR-LoadImg": return 0
+          End if 
+          If typList[i+8] <> tkCOMMA '8 comma
+			MsgBox "Comma Separator ?  -{ " + tokList[i+8] +" }-Line: " + str(lineNum+1),"ERR-LoadImg": return 0
+          End if 
+          If typList[i+9] <> tkIDENT and typList[i+9] <> tkNUMBER '9
+			MsgBox "Wrong Argument(5)! -{ " + tokList[i+7] +" }-Line: " + str(lineNum+1),"ERR-LoadImg": return 0
+          End if 
+          If typList[i+10] <> tkCOMMA '10 comma
+			MsgBox "Comma Separator ?  -{ " + tokList[i+10] +" }-Line: " + str(lineNum+1),"ERR-LoadImg": return 0
+          End if 
+          If typList[i+11] <> tkIDENT and typList[i+11] <> tkNUMBER '11
+			MsgBox "Wrong Argument(6)! -{ " + tokList[i+7] +" }-Line: " + str(lineNum+1),"ERR-LoadImg": return 0
+          End if 
+      END IF
+
+      'check ShowImage hImg, x,y,w,h -> syntax ShowImg himg, ix,iy,iw,ih
+       IF typList[i] = tkSHOWIMG
+              'check LoadImg 1,2,3,4
+          If typList[i+1] <> tkIDENT  'hImg image handler ,must be variable!
+			MsgBox "Wrong Argument(1)! -{ " + tokList[i+1] +" }-Line: " + str(lineNum+1),"ERR-ShowImg": return 0
+          End if
+		 If typList[i+2] <> tkCOMMA  '2 comma
+			MsgBox "Comma Separator ? -{ " + tokList[i+2] +" }-Line: " + str(lineNum+1),"ERR-ShowImg": return 0
+          End if
+		 If typList[i+3] <> tkIDENT and typList[i+3] <> tkNUMBER '3
+			MsgBox "Wrong Argument(2)! -{ " + tokList[i+3] +" }-Line: " + str(lineNum+1),"ERR-ShowImg": return 0
+          End if
+          If typList[i+4] <> tkCOMMA  '4 comma
+			MsgBox "Comma Separator ? -{ " + tokList[i+4] +" }-Line: " + str(lineNum+1),"ERR-ShowImg": return 0
+          End if
+		 If typList[i+5] <> tkIDENT and typList[i+5] <> tkNUMBER '5
+			MsgBox "Wrong Argument(3)! -{ " + tokList[i+5] +" }-Line: " + str(lineNum+1),"ERR-ShowImg": return 0
+          End if
+		 If typList[i+6] <> tkCOMMA  '6 comma
+			MsgBox "Comma Separator ? -{ " + tokList[i+6] +" }-Line: " + str(lineNum+1),"ERR-ShowImg": return 0
+          End if
+		 If typList[i+7] <> tkIDENT and typList[i+7] <> tkNUMBER '7
+			MsgBox "Wrong Argument(4)! -{ " + tokList[i+7] +" }-Line: " + str(lineNum+1),"ERR-ShowImg": return 0
+          End if
+
+       END IF
+
+
 
 	Next i
+
+
+    'check counters
+	If whileCounter > wendCounter
+       MsgBox "WHILE without WEND , check code!","LOOP ERROR"  : return 0
+	End If 
+	If wendCounter > whileCounter
+       MsgBox "WEND without WHILE , check code!","LOOP ERROR"  : return 0
+	End If 
+    If ifCounter > endifCounter
+       MsgBox "IF without ENDIF , check code!","IF/ENDIF ERROR": return 0
+	End If 
+	If endIfCounter > ifCounter
+       MsgBox "ENDIF without IF , check code!","IF/ENDIF ERROR": return 0
+	End If
+	If fnCounter > endFnCounter
+       MsgBox "FUNC without ENDFN , check code!","FUNC ERROR"  : return 0
+	End If 
+	If endFnCounter > fnCounter
+       MsgBox "ENDFN without FUNC , check code!","FUNC ERROR"  : return 0
+	End If 
+	If wMsgCounter > endWMsgCounter
+       MsgBox "WINMSG without ENDWM , check code!","WMSG ERROR"  : return 0
+	End If 
+	If endWMsgCounter > wMsgCounter
+       MsgBox "ENDWM without WINMSG, check code!","WMSG ERROR"  : return 0
+	End If 
+
 return 1
 
 End sub
 '=================================================================================================================
 Sub tokInterpreter()
-    int tok=0,ntok=0,vID=0 ,vTyp=0, funcCall=0, funcID=0: float frnd : INT whileTOS=0 , wcount,cond1,cond2= -1
-    float numRes : string strRes ,funcName : int ptrRes : int resIF , resWhile, labelPos, whilePos,wendPos,funcPos,callPos
+    int tok=0,ntok=0,vID=0 ,vTyp=0, funcCall=0, funcID=0: float frnd : INT whileTOS=0 , wcount,cond1,cond2 = -1, logOP
+    float numRes=0 : string strRes ,funcName : int ptrRes : int resIF , resWhile, labelPos, whilePos,wendPos,funcPos,callPos
     float fop1,fop2,fop3,fop4 : int iop1,iop2,iop3,iop4 : string sop1,sop2,sop3,sop4
-    tc=0 : msgQuit=0
+    int imgType,imgX,imgY,imgW,imgH,cFlag,htc
+    int intImg ,imageID,iID
+    msgQuit=0 
 
 	While tc < nTokens
          start:
@@ -606,7 +825,7 @@ Sub tokInterpreter()
 			If vTyp = tkPOINTER    ' pointer/int var
                  if ntok = tkEQUAL 
                     tc++            ' skip "=" is assign
-                    ptrRes = exec_expr() : varPtr[vID] = INT(ptrRes) ' store result in varStr[] list
+                    ptrRes = exec_expr() : varPtr[vID] = INT(ptrRes) ' store result in varPtr[] list
                   end if 
               End if
            END IF
@@ -616,7 +835,7 @@ Sub tokInterpreter()
             callPos = tc
             funcID   = fnList[tc]  :' print "I->Func ID:" + str(funcID)   ' get funcID-> call pos  
             'print "I-> func_token: " + tokList[funcID-1]   " -->name on pos: " + tokList[funcID] 
-               tc = funcID + 2  ' jump to func pos ,skip 2 tokens()
+               tc = funcID + 2  ' jump to func pos ,skip 2 tokens ( )...
                goto start
         end if  
 
@@ -636,7 +855,31 @@ Sub tokInterpreter()
          tc = callPos
          goto start
 
- 
+    case tkENDWM   'end win msg -> return
+         Return 
+        ' EXIT SUB
+        
+    case tkMOUSEX
+		 gettok() : tok = tkTyp 
+           If tok = tkIDENT
+               vID = varList[tc] : vTyp = varType[vID] 
+               if vTyp = tkFLOAT : varNum[vID] = hMouseX : end if  'push value of MouseX into var
+           End if 
+                         
+	case tkMOUSEY
+		 gettok() : tok = tkTyp 
+           If tok = tkIDENT
+               vID = varList[tc] : vTyp = varType[vID] 
+               if vTyp = tkFLOAT : varNum[vID] = hMouseY : end if  'push value of MouseY into var
+           End if 
+	
+	case tkHWPARAM
+		 gettok() : tok = tkTyp 
+           If tok = tkIDENT
+               vID = varList[tc] : vTyp = varType[vID] 
+               if vTyp = tkFLOAT : varNum[vID] = hWParam : end if  'push value of WParam into var
+           End if                          
+
 	case tkPRINT
 		'IF tok = tkPRINT
             gettok() : tok = tkTyp 
@@ -660,7 +903,10 @@ Sub tokInterpreter()
             If vTyp = tkSTRING  : vID = varList[tc] : strRes = varStr[vID] : End if                       'if is strVar
             if tok = tkQSTRING  : strRes = tokList[tc] : End if                                          'if is quoted
 		   'print on window
-		   TextOn (win, prX, prY, strRes)
+              'SetBkColor( hDCMem, bColor)
+              'SetTextColor( hDCMem, fColor) 
+            TextOut hdcMem,prX,prY,strRes,Len(strRes)
+            ReleaseDC( win, hdcMem)
          'END IF
 
 	case tkPSET
@@ -697,9 +943,9 @@ Sub tokInterpreter()
              'StretchBlt hdc,0,0,rc.right,rc.bottom,hdcMem,0,0,ww,wh,0xCC0020
         ' END IF
 	case tkIF
-         'IF tok = tkIF
+         'IF tok = tkIF.................................................................
             gettok(): tok = tkTyp : vID = varList[tc]: vTyp = varType[vID]                                                'get (1)
-		   If vTyp = tkFLOAT  
+		   IF vTyp = tkFLOAT  
                 '                                                                                                          'if numeric var
                 vID = varList[tc] : fop1 = varNum[vID]                                                                     'op1
                 tc++ : gettok() : tok = tkTyp : vID = varList[tc]: vTyp = varType[vID]                                     'skip cond1      
@@ -707,21 +953,71 @@ Sub tokInterpreter()
                 If tok = tkNUMBER : fop2 = val(tokList[tc]) : end if                                                       'get (2)
                 if vTyp <> tkFLOAT and tok <> tkNUMBER: MsgBox "Wrong Type! " + token ,"ERROR~If":goto ExitProgram :end if   'wrong type
                 tc=tc-2 : gettok() : tok = tkTyp                                                                           'get cond1 back(-2),gt(+1)
-                    If ntok <> tkAND or ntok <> tkOR
+                   ' If ntok <> tkAND or ntok <> tkOR
+                      resIf = vNO 
                        Select tok
                           Case tkLESS
-                             if fop1 < fop2 : resIf = vYES : ELSE : resIf = vNO : end if              
+                             if fop1 < fop2  : resIf = vYES : end if              
                           Case tkMORE
-                             if fop1 > fop2 : resIf = vYES : ELSE : resIf = vNO : end if 
+                             if fop1 > fop2  : resIf = vYES : end if 
                           Case tkEQUAL
-                             if fop1 = fop2 : resIf = vYES : ELSE : resIf = vNO : end if
+                             if fop1 = fop2  : resIf = vYES : end if
                           Case tkNOT
-                             if fop1 <> fop2 : resIf = vYES : ELSE : resIf = vNO : end if
+                             if fop1 <> fop2 : resIf = vYES : end if
                        End select
-                    End if               
-            End If
+                     cond1 = resIf
+              END IF 
+               ' print ">>TOKEN:" + tokList[tc] + " >TC: "   'check AND or OR
+               ' shift tc>> = skip var after operator [op] [var] >> 
+               tc=tc+2 : logOP = 0 
+		 IF (typList[tc] <> tkAND) AND (typList[tc] <> tkOR): tc=tc-1: goto updateIF: End if
+                                 'if there is no AND or OR then jump to start   
+		    if typList[tc] = tkAND : logOP = tkAND :  end if                             'if logical operator is AND / &
+             IF typList[tc] = tkOR  : logOP = tkOR  : END IF                              'if logical operator is OR  / |
+               gettok(): tok = tkTyp : vID = varList[tc]: vTyp = varType[vID]           'get ar(3)
+               IF vTyp = tkFLOAT  
+                vID = varList[tc] : fop3 = varNum[vID]                                                                     'op2
+                tc++ : gettok() : tok = tkTyp : vID = varList[tc]: vTyp = varType[vID]                                     'skip cond2      
+                If vTyp = tkFLOAT :  vID = varList[tc] : fop4 = varNum[vID] :End if                                        'get (3) 
+                If tok = tkNUMBER : fop4 = val(tokList[tc]) : end if                   
+                if vTyp <> tkFLOAT AND tok <> tkNUMBER: MsgBox "Wrong Type! " + token ," ERROR":goto ExitProgram : end if   'wrong type
+                tc=tc-2 : gettok() : tok = tkTyp                                                                          'get cond2 back(-2),gt(+1)
+                'If ntok <> tkAND or ntok <> tkOR
+                       resIf = vNO 
+                       Select tok
+                          Case tkLESS
+                             if fop3 < fop4 : resIf = vYES : end if              
+                          Case tkMORE
+                             if fop3 > fop4 : resIf = vYES : end if 
+                           Case tkEQUAL
+                             if fop3 = fop4 : resIf = vYES : end if
+                          Case tkNOT
+                            if fop3 <> fop4 : resIf = vYES : end if
+                        End select
+                    cond2 = resIf
+               END IF
+              tc=tc+2 'skip var after operator [op] [var] >> 
+             'updateIF:   '<- label update IF
+			   '-----------------------------------------------------------------------------
+            IF logOP = tkAND                         
+              IF cond1 = vYES AND cond2 = vYES : resIf = vYES : end if ' check cond
+              IF cond1 = vNO  AND cond2 = vNO  : resIf = vYES : end if
+              IF cond1 = vYES AND cond2 = vNO  : resIf = vNO  : end if
+              IF cond1 = vNO  AND cond2 = vYES : resIf = vNO  : end if
+              'print "RES-IF:" + str(resIf)
+            END IF
+            '-----------------------------------------------------------------------------
+            IF logOP = tkOR
+              IF cond1 = vYES AND cond2 = vYES : resIf = vYES : end if 
+              IF cond1 = vYES AND cond2 = vNO  : resIf = vYES : end if 
+              IF cond1 = vNO  AND cond2 = vYES : resIf = vYES : end if 
+              IF cond1 = vNO  AND cond2 = vNO  : resIf = vNO  : end if
+            END IF
+		
+          updateIF:   '<- label update IF
          'exec_IF----------------------------
-             if resIF = vYES : end if
+             'if resIF = vYES :goto continueIF :end if
+            ' continueIF:
              'continue until tkELSE 
              if resIF = vNO 
                  do
@@ -729,11 +1025,13 @@ Sub tokInterpreter()
                  if typList[tc] = tkELSE : goto start : end if
                  if typList[tc] = tkENDIF : exit do : end if
                  end do
-             end if
-
-         'END IF
+             'end if
+             'else
+               ' goto start
+             endif
+         
 	case tkELSE
-         'exec_ELSE------------------------
+         'exec_ELSE.........................................
          'IF tok = tkELSE
             if resIF = vYES
                do
@@ -741,7 +1039,10 @@ Sub tokInterpreter()
                  'if typList[tc] = tkELSE : goto start : end if
                  if typList[tc] = tkENDIF : exit do : end if
                  end do
-             end if            
+             'end if 
+            'else
+             ' goto start
+            end if           
          'END IF
 
          'exec_While----------------------------------------------------------------------------
@@ -755,42 +1056,46 @@ Sub tokInterpreter()
                tc++ : gettok() : tok = tkTyp : vID = varList[tc]: vTyp = varType[vID]                                     'skip cond1      
                If vTyp = tkFLOAT :  vID = varList[tc] : fop2 = varNum[vID] :End if                                        'get (2) 
                If tok = tkNUMBER : fop2 = val(tokList[tc]) : end if                   
-               if vTyp <> tkFLOAT and tok <> tkNUMBER: MsgBox "Wrong Type! " + token ,"ERROR":goto ExitProgram : end if   'wrong type
+               if vTyp <> tkFLOAT AND tok <> tkNUMBER: MsgBox "Wrong Type! " + token ,"ERROR":goto ExitProgram : end if   'wrong type
                 tc=tc-2 : gettok() : tok = tkTyp                                                                           'get cond1 back(-2),gt(+1)
                     'If ntok <> tkAND or ntok <> tkOR
+                       resWhile = vNO 
                        Select tok
                           Case tkLESS
-                             if fop1 < fop2 : resWhile = vYES : ELSE : resWhile = vNO : end if              
+                             if fop1 < fop2 : resWhile = vYES : end if              
                           Case tkMORE
-                             if fop1 > fop2 : resWhile = vYES : ELSE : resWhile = vNO : end if 
+                             if fop1 > fop2 : resWhile = vYES : end if 
                           Case tkEQUAL
-                             if fop1 = fop2 : resWhile = vYES : ELSE : resWhile = vNO : end if
+                             if fop1 = fop2 : resWhile = vYES : end if
                           Case tkNOT
-                            if fop1 <> fop2 : resWhile = vYES : ELSE : resWhile = vNO : end if
+                            if fop1 <> fop2 : resWhile = vYES : end if
                         End select
                     cond1 = resWhile
 		   End If
             ' shift tc>> = skip var after operator [op] [var] >> 
            tc=tc+2 ': print ">>TOKEN:" + tokList[tc] + ">TC: " + str(tc)
-       IF typList[tc] <> tkAND or typList[tc] <> tkOR : goto update_while_stack : end if     'if there is no AND or OR then jump over
+       IF typList[tc] <> tkAND AND typList[tc] <> tkOR : goto update_while_stack : end if     'if there is no AND or OR then jump over
+       IF typList[tc] = tkAND : logOP = tkAND : END IF                                        'if logical operator is AND / &
+       IF typList[tc] = tkOR  : logOP = tkOR  : END IF                                        'if logical operator is OR  / |
             gettok(): tok = tkTyp : vID = varList[tc]: vTyp = varType[vID]                                                'get ar(3)
 		   If vTyp = tkFLOAT  
                vID = varList[tc] : fop3 = varNum[vID]                                                                     'op2
                tc++ : gettok() : tok = tkTyp : vID = varList[tc]: vTyp = varType[vID]                                     'skip cond2      
                If vTyp = tkFLOAT :  vID = varList[tc] : fop4 = varNum[vID] :End if                                        'get (3) 
                If tok = tkNUMBER : fop4 = val(tokList[tc]) : end if                   
-               if vTyp <> tkFLOAT and tok <> tkNUMBER: MsgBox "Wrong Type! " + token ,"ERROR":goto ExitProgram : end if   'wrong type
+               if vTyp <> tkFLOAT AND tok <> tkNUMBER: MsgBox "Wrong Type! " + token ,"ERROR":goto ExitProgram : end if   'wrong type
                 tc=tc-2 : gettok() : tok = tkTyp                                                                          'get cond2 back(-2),gt(+1)
                     'If ntok <> tkAND or ntok <> tkOR
+                       resWhile = vNO 
                        Select tok
                           Case tkLESS
-                             if fop3 < fop4 : resWhile = vYES : ELSE : resWhile = vNO : end if              
+                             if fop3 < fop4 : resWhile = vYES : end if              
                           Case tkMORE
-                             if fop3 > fop4 : resWhile = vYES : ELSE : resWhile = vNO : end if 
+                             if fop3 > fop4 : resWhile = vYES : end if 
                           Case tkEQUAL
-                             if fop3 = fop4 : resWhile = vYES : ELSE : resWhile = vNO : end if
+                             if fop3 = fop4 : resWhile = vYES : end if
                           Case tkNOT
-                            if fop3 <> fop4 : resWhile = vYES : ELSE : resWhile = vNO : end if
+                            if fop3 <> fop4 : resWhile = vYES : end if
                         End select
                     cond2 = resWhile
 		   End If
@@ -801,17 +1106,21 @@ Sub tokInterpreter()
                whileTOS = whileTOS + 1 
 	          whileStack[whileTOS] = whilePos    '52,  TOS=2- 52 , 1-52
               wcount = 1 
-            IF cond2 > -1                         '
-	         '------------------------------------------------------------------------------------------------ 
-              IF cond1 = vYES AND cond2 = vYES: resWhile = vYES : end if ' check cond
-              IF cond1 = vNO AND cond2 = vNO: resWhile = vNO : end if
-              IF cond1 = vYES AND cond2 = vNO: resWhile = vNO : end if
-              IF cond1 = vYES OR  cond2 = vYES: resWhile = vYES : end if 
-              IF cond1 = vYES OR  cond2 = vNO: resWhile = vYES :  end if 
-              IF cond1 = vNO OR  cond2 = vYES: resWhile = vYES :  end if 
-              IF cond1 = vNO OR  cond2 = vNO: resWhile = vNO :  end if
-            '------------------------------------------------------------------------------------------------
+            '-----------------------------------------------------------------------------
+            IF logOP = tkAND                         
+              IF cond1 = vYES AND cond2 = vYES : resWhile = vYES : end if ' check cond
+              IF cond1 = vNO  AND cond2 = vNO  : resWhile = vNO  : end if
+              IF cond1 = vYES AND cond2 = vNO  : resWhile = vNO  : end if
+              IF cond1 = vNO  AND cond2 = vYES : resWhile = vNO  : end if
             END IF
+            '-----------------------------------------------------------------------------
+            IF logOP = tkOR
+              IF cond1 = vYES OR cond2 = vYES : resWhile = vYES : end if 
+              IF cond1 = vYES OR cond2 = vNO  : resWhile = vYES : end if 
+              IF cond1 = vNO  OR cond2 = vYES : resWhile = vYES : end if 
+              IF cond1 = vNO  OR cond2 = vNO  : resWhile = vNO  : end if
+            END IF
+            '------------------------------------------------------------------------------
 
             if resWhile = vNO 
              whileTOS = whileTOS - 1  
@@ -855,27 +1164,27 @@ Sub tokInterpreter()
          'exec_window color -------------------------
          'IF tok = tkWCOLOR
             gettok() : tok = tkTyp 
-            If tok = tkNUMBER : prX = val(tokList[tc]) : End if                                        'if number 
+            If tok = tkNUMBER : winRed = val(tokList[tc]) : End if                                        'if number 
             If tok = tkIDENT
                vID = varList[tc] : vTyp = varType[vID] 
-               if vTyp = tkFLOAT : prX = varNum[vID] : end if 
+               if vTyp = tkFLOAT : winRed = varNum[vID] : end if 
             End if                          
             'tc++                                                                                      'skip comma
             tc++ : gettok() : tok = tkTyp 
-            If tok = tkNUMBER : prY = val(tokList[tc]) : End if                                         'if number 
+            If tok = tkNUMBER : winGreen = val(tokList[tc]) : End if                                         'if number 
             If tok = tkIDENT 
               vID = varList[tc] : vTyp = varType[vID]
-              if vTyp = tkFLOAT : prY = varNum[vID] : end if
+              if vTyp = tkFLOAT : winGreen = varNum[vID] : end if
             End if 
              'tc++                                                                                      'skip comma
             tc++ : gettok() : tok = tkTyp 
-            If tok = tkNUMBER : prZ = val(tokList[tc]) : End if                                         'if number 
+            If tok = tkNUMBER : winBlue = val(tokList[tc]) : End if                                         'if number 
             If tok = tkIDENT 
               vID = varList[tc] : vTyp = varType[vID]
-              if vTyp = tkFLOAT : prZ = varNum[vID] : end if
+              if vTyp = tkFLOAT : winBlue = varNum[vID] : end if
             End if 
             'set window color
-            WinColor( win, prX, prY, prZ) :' bColor = rgb(prX,prY,prZ) 
+            WinColor( win, winRed, winGreen, winBlue) 
 
          'END IF
 
@@ -883,95 +1192,96 @@ Sub tokInterpreter()
          'exec front color -------------------------
          'IF tok = tkFCOLOR
             gettok() : tok = tkTyp 
-            If tok = tkNUMBER : prX = val(tokList[tc]) : End if                                        'if number 
+            If tok = tkNUMBER : frontRed = val(tokList[tc]) : End if                                        'if number 
             If tok = tkIDENT
                vID = varList[tc] : vTyp = varType[vID] 
-               if vTyp = tkFLOAT : prX = varNum[vID] : end if 
+               if vTyp = tkFLOAT : frontRed = varNum[vID] : end if 
             End if                          
             'tc++                                                                                      'skip comma
             tc++ : gettok() : tok = tkTyp 
-            If tok = tkNUMBER : prY = val(tokList[tc]) : End if                                         'if number 
+            If tok = tkNUMBER : frontGreen = val(tokList[tc]) : End if                                         'if number 
             If tok = tkIDENT 
               vID = varList[tc] : vTyp = varType[vID]
-              if vTyp = tkFLOAT : prY = varNum[vID] : end if
+              if vTyp = tkFLOAT : frontGreen = varNum[vID] : end if
             End if 
              'tc++                                                                                      'skip comma
             tc++ : gettok() : tok = tkTyp 
-            If tok = tkNUMBER : prZ = val(tokList[tc]) : End if                                         'if number 
+            If tok = tkNUMBER : frontBlue = val(tokList[tc]) : End if                                         'if number 
             If tok = tkIDENT 
               vID = varList[tc] : vTyp = varType[vID]
-              if vTyp = tkFLOAT : prZ = varNum[vID] : end if
+              if vTyp = tkFLOAT : frontBlue = varNum[vID] : end if
             End if 
             'set front color
-            'FrontColor (win, prX, prY, prZ)
-             fColor = RGB (prX,prY,prZ) :  SetBkColor( hDCMem, bColor)
+             fColor = RGB( frontRed, frontGreen, frontBlue)
               SetTextColor( hDCMem, fColor) 
-        ' END IF
+             'SetBkColor( hDCMem, bColor)
+ 
+        
      case tkBCOLOR
          'exec front color -------------------------
          'IF tok = tkBCOLOR
             gettok() : tok = tkTyp 
-            If tok = tkNUMBER : prX = val(tokList[tc]) : End if                                        'if number 
+            If tok = tkNUMBER : backRed = val(tokList[tc]) : End if                                        'if number 
             If tok = tkIDENT
                vID = varList[tc] : vTyp = varType[vID] 
-               if vTyp = tkFLOAT : prX = varNum[vID] : end if 
+               if vTyp = tkFLOAT : backRed = varNum[vID] : end if 
             End if                          
             'tc++                                                                                      'skip comma
             tc++ : gettok() : tok = tkTyp 
-            If tok = tkNUMBER : prY = val(tokList[tc]) : End if                                         'if number 
+            If tok = tkNUMBER : backGreen = val(tokList[tc]) : End if                                         'if number 
             If tok = tkIDENT 
               vID = varList[tc] : vTyp = varType[vID]
-              if vTyp = tkFLOAT : prY = varNum[vID] : end if
+              if vTyp = tkFLOAT : backGreen = varNum[vID] : end if
             End if 
              'tc++                                                                                      'skip comma
             tc++ : gettok() : tok = tkTyp 
-            If tok = tkNUMBER : prZ = val(tokList[tc]) : End if                                         'if number 
+            If tok = tkNUMBER : backBlue = val(tokList[tc]) : End if                                         'if number 
             If tok = tkIDENT 
               vID = varList[tc] : vTyp = varType[vID]
-              if vTyp = tkFLOAT : prZ = varNum[vID] : end if
+              if vTyp = tkFLOAT : backBlue = varNum[vID] : end if
             End if 
             'set front color
-            'FrontColor (win, prX, prY, prZ)
-             bColor = RGB (prX,prY,prZ) :  SetBkColor( hDCMem, bColor)
-              'SetTextColor( hDCMem, fColor) 
-        ' END IF
+            bColor = RGB(backRed, backGreen, backBlue) :' SetBkMode( hDCMem, 1) 
+             SetBkColor( hDCMem, bColor) ': SetTextColor( hDCMem, fColor) 
+            
+        
 
 	case tkLINE
          'exec_line -------------------------
          'IF tok = tkLINE
             gettok() : tok = tkTyp 
-            If tok = tkNUMBER : piX = val(tokList[tc]) : End if                                        'if number 
+            If tok = tkNUMBER : lineX1 = val(tokList[tc]) : End if                                        'if number 
             If tok = tkIDENT
                vID = varList[tc] : vTyp = varType[vID] 
-               if vTyp = tkFLOAT : piX = varNum[vID] : end if 
+               if vTyp = tkFLOAT : lineX1 = varNum[vID] : end if 
             End if                          
             'tc++                                                                                      'skip comma
             tc++ : gettok() : tok = tkTyp 
-            If tok = tkNUMBER : piY = val(tokList[tc]) : End if                                         'if number 
+            If tok = tkNUMBER : lineY1 = val(tokList[tc]) : End if                                         'if number 
             If tok = tkIDENT 
               vID = varList[tc] : vTyp = varType[vID]
-              if vTyp = tkFLOAT : piY = varNum[vID] : end if
+              if vTyp = tkFLOAT : lineY1 = varNum[vID] : end if
             End if 
              'tc++                                                                                      'skip comma
             tc++ : gettok() : tok = tkTyp 
-            If tok = tkNUMBER : piZ = val(tokList[tc]) : End if                                         'if number 
+            If tok = tkNUMBER : lineX2 = val(tokList[tc]) : End if                                         'if number 
             If tok = tkIDENT 
               vID = varList[tc] : vTyp = varType[vID]
-              if vTyp = tkFLOAT : piZ = varNum[vID] : end if
+              if vTyp = tkFLOAT : lineX2 = varNum[vID] : end if
             End if 
              'tc++                                                                                      'skip comma
             tc++ : gettok() : tok = tkTyp 
-            If tok = tkNUMBER : piQ = val(tokList[tc]) : End if                                         'if number 
+            If tok = tkNUMBER : lineY2 = val(tokList[tc]) : End if                                         'if number 
             If tok = tkIDENT 
               vID = varList[tc] : vTyp = varType[vID]
-              if vTyp = tkFLOAT : piQ = varNum[vID] : end if
+              if vTyp = tkFLOAT : lineY2 = varNum[vID] : end if
             End if 
             'draw line x,y -> x1,y1
             'DrawLine( win, piX, piY, piZ, piQ)
 			np = CreatePen(PS_SOLID,1,fColor)
 			op = SelectObject(hdcMem, np)
-			MoveToEx hdcMem, piX,piY,Byval 0
-			LineTo hdcMem, piZ, piQ
+			MoveToEx hdcMem, lineX1, lineY1,Byval 0
+			LineTo hdcMem, lineX2, lineY2
 			'BitBlt(hDC, 0, 0, ww, wh, hdcMem, 0, 0, SRCCOPY)
 			DeleteObject(op)
 			'int hPen = GetStockObject(DC_PEN)
@@ -1011,7 +1321,149 @@ Sub tokInterpreter()
             End if 
             'draw rect x,y -> x1,y1
             DrawRect( win, piX, piY, piZ, piQ)
-			
+
+	case tkLOADIMG
+		'exec img = LoadImage(0, "micData\icOpen.ico", 1, 32, 32, 24)  ...load icon
+      'syntax-> LoadImg (1)hImg , (3)str "img.bmp" ,(5)imgType , (7)w , (9)h, (11)colorFlags
+         gettok() : tok = tkTyp                                         
+            If tok = tkIDENT                                      'arg(1)
+               vID = varList[tc] : vTyp = varType[vID] : htc = tc
+               if vTyp = tkPOINTER : hImg = varPtr[vID] : end if    'read value from list
+            End if 
+            tc++ : gettok() : tok = tkTyp                         'arg(2)
+            if tok = tkQSTRING  : strRes = tokList[tc] : End if   'if is quoted
+            If tok = tkIDENT                                      'if is strVar                                                  
+              vID = varList[tc] : vTyp = varType[vID]          
+              if vTyp = tkSTRING : strRes =  varStr[vID] : end if
+            End if 
+            tc++ : gettok() : tok = tkTyp                         'arg(3)
+            If tok = tkNUMBER : imgType = val(tokList[tc]) : End if                                         
+            If tok = tkIDENT 
+              vID = varList[tc] : vTyp = varType[vID]
+              if vTyp = tkFLOAT : imgType= varNum[vID] : end if
+            End if 
+            tc++ : gettok() : tok = tkTyp                         'arg(4)w
+            If tok = tkNUMBER : imgW = val(tokList[tc]) : End if                                         
+            If tok = tkIDENT 
+              vID = varList[tc] : vTyp = varType[vID]
+              if vTyp = tkFLOAT : imgW= varNum[vID] : end if
+            End if 
+            tc++ : gettok() : tok = tkTyp                         'arg(5)h
+            If tok = tkNUMBER : imgH = val(tokList[tc]) : End if                                         
+            If tok = tkIDENT 
+              vID = varList[tc] : vTyp = varType[vID]
+              if vTyp = tkFLOAT : imgH= varNum[vID] : end if
+            End if 
+            tc++ : gettok() : tok = tkTyp                         'arg(6)cFlag
+            If tok = tkNUMBER : cFlag = val(tokList[tc]) : End if                                         
+            If tok = tkIDENT 
+              vID = varList[tc] : vTyp = varType[vID]
+              if vTyp = tkFLOAT : cflag= varNum[vID] : end if
+            End if
+            'load image and return handler hImg
+            hImg = LoadImage(0, strRes, imgType, imgW, imgH, cFlag)
+            'store handler to var array
+             vID = varList[htc] : vTyp = varType[vID]
+             if vTyp = tkPOINTER : varPtr[vID] = hImg : end if
+             'store image id into array ...max id 64
+             if imageID < 64
+                imageID = imageID + 1
+                imgID[vID] = imageID
+                imgHDC[imageID] = CreateCompatibleDC(0)
+                SelectObject( imgHDC[imageID], hImg)
+             end if
+
+	case tkSHOWIMG
+         'syntax -> ShowImg himg(ptr),x,y,w,h              
+		gettok() : tok = tkTyp                                         
+            If tok = tkIDENT                                      'arg(1)
+               vID = varList[tc] : vTyp = varType[vID]            'must be INT type(ptr)
+               if vTyp = tkPOINTER 
+                    'hImg = varPtr[vID] : 'print "hImage:" + str(hImg)
+                   ' intImg = hImg
+                   '    iID = imgID[vID]  'get image id
+               end if    
+            End if 
+		   tc++ : gettok() : tok = tkTyp                         'arg(2)
+            If tok = tkNUMBER : imgX = val(tokList[tc]) : End if                                         
+            If tok = tkIDENT 
+              vID = varList[tc] : vTyp = varType[vID]
+              if vTyp = tkFLOAT : imgX = varNum[vID] : end if
+            End if 
+            tc++ : gettok() : tok = tkTyp                         'arg(3)w
+            If tok = tkNUMBER : imgY = val(tokList[tc]) : End if                                         
+            If tok = tkIDENT 
+              vID = varList[tc] : vTyp = varType[vID]
+              if vTyp = tkFLOAT : imgY = varNum[vID] : end if
+            End if
+             tc++ : gettok() : tok = tkTyp                         'arg(4)
+            If tok = tkNUMBER : imgW = val(tokList[tc]) : End if                                         
+            If tok = tkIDENT 
+              vID = varList[tc] : vTyp = varType[vID]
+              if vTyp = tkFLOAT : imgW = varNum[vID] : end if
+            End if 
+            tc++ : gettok() : tok = tkTyp                         'arg(5)w
+            If tok = tkNUMBER : imgH = val(tokList[tc]) : End if                                         
+            If tok = tkIDENT 
+              vID = varList[tc] : vTyp = varType[vID]
+              if vTyp = tkFLOAT : imgH = varNum[vID] : end if
+            End if
+
+		   'add img to hdc
+		  hdcImg = imgHDC[iID] : ' print "MEM_HDC:" + str(hdcimg)
+           'bmpMem = CreateCompatibleBitmap(hdcImg, imgw,imgh)
+           'int bmp1 = SelectObject(hdcImg, bmpMem) : print "selected_bitmap:"+ str(bmp1)
+		  selBmp  = SelectObject(hdcImg, intImg) : ' print "selected:image:"+ str(selBmp)
+            'copy imgHDC to memHDC
+		   'BitBlt(hDCMem, imgX, imgY, imgW, imgH, hdcImg, 0, 0, SRCCOPY)
+		    'InvalidateRect(win, 0, 0)  ' show image            
+            'BitBlt(hDCMem, imgX, imgY, imgW, imgH, hdcImg, 0, 0, SRCCOPY)
+            TransparentBlt (hDCMem, imgX, imgY, imgW, imgH, hdcImg, 0, 0, imgW, imgH, 0)
+
+	case tkSHOWIMGT
+         'syntax -> ShowImgT himg(ptr),x,y,w,h   transparent blit           
+		gettok() : tok = tkTyp                                         
+            If tok = tkIDENT                                      'arg(1)
+               vID = varList[tc] : vTyp = varType[vID]            'must be INT type(ptr)
+               if vTyp = tkPOINTER 
+                    hImg = varPtr[vID] : 'print "hImage:" + str(hImg)
+                    intImg = hImg
+                    iID = imgID[vID]  'set image id variable
+               end if    
+            End if 
+		   tc++ : gettok() : tok = tkTyp                         'arg(2)
+            If tok = tkNUMBER : imgX = val(tokList[tc]) : End if                                         
+            If tok = tkIDENT 
+              vID = varList[tc] : vTyp = varType[vID]
+              if vTyp = tkFLOAT : imgX = varNum[vID] : end if
+            End if 
+            tc++ : gettok() : tok = tkTyp                         'arg(3)w
+            If tok = tkNUMBER : imgY = val(tokList[tc]) : End if                                         
+            If tok = tkIDENT 
+              vID = varList[tc] : vTyp = varType[vID]
+              if vTyp = tkFLOAT : imgY = varNum[vID] : end if
+            End if
+             tc++ : gettok() : tok = tkTyp                         'arg(4)
+            If tok = tkNUMBER : imgW = val(tokList[tc]) : End if                                         
+            If tok = tkIDENT 
+              vID = varList[tc] : vTyp = varType[vID]
+              if vTyp = tkFLOAT : imgW = varNum[vID] : end if
+            End if 
+            tc++ : gettok() : tok = tkTyp                         'arg(5)w
+            If tok = tkNUMBER : imgH = val(tokList[tc]) : End if                                         
+            If tok = tkIDENT 
+              vID = varList[tc] : vTyp = varType[vID]
+              if vTyp = tkFLOAT : imgH = varNum[vID] : end if
+            End if
+
+		   'get imgid to get img hdc
+		   hdcImg = imgHDC[iID]
+		  
+            'copy imgHDC to memHDC
+		 ' BitBlt(hDCMem, imgX, imgY, imgW, imgH, hdcImg, 0, 0, SRCCOPY)
+		   'update image            
+            TransparentBlt (hDCMem, imgX, imgY, imgW, imgH, hdcImg, 0, 0, imgW, imgH, 0)
+            
 
 		 'exec circle -------------------------
 	case tkCIRCLE
@@ -1035,10 +1487,11 @@ Sub tokInterpreter()
               vID = varList[tc] : vTyp = varType[vID]
               if vTyp = tkFLOAT : cra = varNum[vID] : end if
             End if 
-		 ' Circle (win,piX,piY,piZ)
+
+		 'Circle (win,piX,piY,piZ)
            '-----------------------------------------------
-          SetBkMode( hDC, 1) 'transparent
-		SetBkColor(hDC, RGB(220,220,250))
+          SetBkMode( hDCMem, 1) 'transparent
+		'SetBkColor(hDC, RGB(220,220,250))
 		np = CreatePen(PS_SOLID,1,fColor)  'new pen
 		op = SelectObject(hdcMem, np)
 		nB = CreateSolidBrush( bColor)   'new Brush
@@ -1047,16 +1500,17 @@ Sub tokInterpreter()
 		Ellipse hdcMem,piX-cra,piY-cra,cra+piX,cra+piY
 
 		'BitBlt(hDCmem, 0, 0, ww, wh, hdc, 0, 0, SRCCOPY)
-		DeleteObject(SelectObject(hdcMem, op))
-		DeleteObject(SelectObject(hdcMem, oB))
-		ReleaseDC( win, hdc)
+       'TransparentBlt (hDC, 0, 0, ww, wh, hdcMem, 0, 0, ww, wh, 0)  
+	       DeleteObject(SelectObject(hdcMem, op))
+	        DeleteObject(SelectObject(hdcMem, oB))
+		   ReleaseDC( win, hdc)
          '----------------------------------------------------
      
 	case else
          'peekmsg
           if PeekMessage (wm,0,0,0,Pm_Remove)>0 ' //peek 
            'iF wm.message = WM_QUIT : DeleteDC(hdc) : end if
-          TranslateMessage (wm)
+           TranslateMessage (wm)
            DispatchMessage (wm)
          end if
      
@@ -1094,10 +1548,11 @@ sub term() as float
 float v 
 v = factor()
 
-while token = "*" or token = "/" or token = "%"
+while token = "*" or token = "/" or token = "%" or token="^"
 if token = "*": gettok() : v = v * factor(): end if
 if token = "/": gettok() : v = v / factor(): end if
 if token = "%": gettok() : v = v \ factor(): end if
+if token = "^": gettok() : v = v ^ factor(): end if
 wend
 
 return v
@@ -1117,10 +1572,12 @@ end if
 
 if tkTyp = tkIDENT
 'gettok()
-vID = varList[tc]  : vTyp = varType[vID] :' print "token->"+ token +" var_ID:" + str(vID) + "_varType: " + str(vTyp)
-IF vTyp = tkFLOAT : v = varNum[vID] : end if
+vID = varList[tc]  : vTyp = varType[vID] : ' print "token->"+ token +" var_ID:" + str(vID) + "_varType: " + str(vTyp)
+IF vTyp = tkFLOAT   : v = varNum[vID] : end if
+IF vTyp = tkPOINTER : v = varPtr[vID] : end if
  gettok()
 End if
+
  'vID = varList[tc]  : vTyp = varType[vID] 
 If tkTyp = tkRND   : gettok() : v = RndFn(factor())  : End if 
 If tkTyp = tkSIN   : gettok() : v = sin(factor())    : End if
@@ -1133,8 +1590,9 @@ If tkTyp = tkSQR   : gettok() : v = sqr(factor())    : End if
 If tkTyp = tkLOG   : gettok() : v = log(factor())    : End if
 If tkTyp = tkROUND : gettok() : v = round(factor())  : End if
 If tkTyp = tkINT   : gettok() : v = int(factor())    : End if
+If tkTyp = tkFRAC  : gettok() : v = frac(factor())   : End if
 
-If tkTyp = tkSTRING 
+If tkTyp = tkSTRING and tkTyp <> tkPOWUP
    MsgBox "Not Numeric! -{ " + token +" }","TYPE ERROR": goto ExitProgram
 End if
 
@@ -1153,7 +1611,7 @@ End sub
 
 ' execute string expression---------------------------------------------
 Sub exec_strExpr() as string
-gettok()'start
+gettok() 'start
 string res 
 res = strExpr()
 'MsgBox "STR_RESULT=" + res , "EXEC_STR_EXPR:"
@@ -1173,12 +1631,12 @@ while token = "+"
 if token = "+": gettok() : vs = vs + strFactor(): end if
 wend
 
-return vs
+Return vs
 End Sub
 
 '---------------------------------------------------------------------
 Sub strFactor() as string
-string vs : int vID, vTyp
+string vs,tmpstr: int vID, vTyp ,tmpSize,tmpPos
 
 if tkTyp = tkIDENT  'str variable
   vID = varList[tc]  : vTyp = varType[vID] :' print "token->"+ token +" var_ID:" + str(vID) + "_varType: " + str(vTyp)
@@ -1186,6 +1644,87 @@ if tkTyp = tkIDENT  'str variable
     vs = varStr[vID] : gettok()
   End if
 end if
+  'str$
+  If tkTyp = tkSTRS : gettok(): vs = str(expr()) : End if
+  
+  'left$( str,size)
+  If tkTyp = tkLEFTSTR : gettok() :' print "TOK:" + token
+      gettok() :'  print "TOK2:" + token
+      vID = varList[tc]  : vTyp = varType[vID]
+      IF vTyp = tkSTRING 
+          tmpstr = varStr[vID] :' print "stringVar:" + tmpstr
+      END IF
+      gettok()
+      IF tkTyp = tkCOMMA 
+            'print "is_comma"
+            gettok()
+            vID = varList[tc]  : vTyp = varType[vID]
+            IF tkTyp = tkNUMBER : tmpSize = val(token)  : end if
+            IF vTyp = tkFLOAT   : tmpSize = varNum[vID] : end if
+            IF vTyp = tkPOINTER : tmpSize = varPtr[vID] : end if 
+            'print "StrSIZE:" + str(tmpSize)
+            gettok()
+            vs = left(tmpstr,tmpSize)
+            Return vs
+      END IF
+  End if
+   
+  'right$(str,size)
+  If tkTyp = tkRIGHTSTR : gettok() :' print "TOK:" + token
+      gettok() :'  print "TOK2:" + token
+      vID = varList[tc]  : vTyp = varType[vID]
+      IF vTyp = tkSTRING 
+          tmpstr = varStr[vID] :' print "stringVar:" + tmpstr
+      END IF
+      gettok()
+      IF tkTyp = tkCOMMA 
+            'print "is_comma"
+            gettok()
+            vID = varList[tc]  : vTyp = varType[vID]
+            IF tkTyp = tkNUMBER : tmpSize = val(token)  : end if
+            IF vTyp = tkFLOAT   : tmpSize = varNum[vID] : end if
+            IF vTyp = tkPOINTER : tmpSize = varPtr[vID] : end if 
+            'print "StrSIZE:" + str(tmpSize)
+            gettok() ': print "TOK-RSTR:" + token
+            vs = RightS(tmpstr,tmpSize)
+            Return vs
+      END IF
+  End if
+
+  'mid$(str,pos,len)
+  If tkTyp = tkMIDSTR : gettok() ': print "TOK1:" + token
+      gettok() ':  print "TOK2:" + token
+      vID = varList[tc]  : vTyp = varType[vID]
+      IF vTyp = tkSTRING 
+          tmpstr = varStr[vID] :' print "stringVar:" + tmpstr
+      END IF
+
+      gettok() ':  print "TOK3:" + token
+
+      IF tkTyp = tkCOMMA 
+            gettok() ':  print "TOK4:" + token
+            vID = varList[tc]  : vTyp = varType[vID]
+            IF tkTyp = tkNUMBER : tmpPos = val(token)  : end if
+            IF vTyp = tkFLOAT   : tmpPos = varNum[vID] : end if
+            IF vTyp = tkPOINTER : tmpPos = varPtr[vID] : end if           
+      END IF
+
+      gettok() ':  print "TOK5:" + token
+
+	  IF tkTyp = tkCOMMA
+          gettok() ':  print "TOK6:" + token
+                vID = varList[tc]  : vTyp = varType[vID]
+                IF tkTyp = tkNUMBER : tmpSize = val(token)  : end if
+                IF vTyp = tkFLOAT   : tmpSize = varNum[vID] : end if
+                IF vTyp = tkPOINTER : tmpSize = varPtr[vID] : end if            
+                gettok() ': print "TOK7:" + token
+               vs = mid(tmpstr,tmpPos,tmpSize)
+              Return vs
+       END IF           
+      
+  End If
+
+
 
 If tkTyp = tkNUMBER 
    MsgBox "Not String! -{ " + token +" }","TYPE ERROR": goto ExitProgram
@@ -1195,7 +1734,7 @@ if tkTyp = tkQSTRING ' quoted string
 vs = token :  gettok()
 end if
 
-return vs
+Return vs
 End Sub
 
 '================================================================
@@ -1207,7 +1746,7 @@ SUB TextOn(wID as INT,tx as INT,ty as INT,txt as string)
 'draw text to screen DC
 TextOut hdcMem,tx,ty,txt,Len(txt)
 'blit screen DC to memDC-------------------------
-BitBlt(hDC, 0, 0, ww, wh, hdcMem, 0, 0, SRCCOPY)
+'BitBlt(hDC, 0, 0, ww, wh, hdcMem, 0, 0, SRCCOPY)
 
 ReleaseDC( wID, hdc)
 END SUB
@@ -1246,19 +1785,33 @@ SUB Circle (wID as INT,byval cix as INT,byval ciy as INT,byval cra as INT)
 'GetSize(wID,0,0,ww,hh)
 'SelectObject(hdc, CreatePen(PS_SOLID,1,fColor))
 
-SetBkMode( hDC, 1) 'transparent
-SetBkColor(hDC, RGB(220,220,250))
-np = CreatePen(PS_SOLID,1,fColor)  'new pen
-op = SelectObject(hdc, np)
-nB = CreateSolidBrush( bColor)   'new Brush
-oB = SelectObject(hdc, nB)
+'SetBkMode( hDC, 1) 'transparent
+'SetBkColor(hDC, RGB(220,220,250))
+'np = CreatePen(PS_SOLID,1,fColor)  'new pen
+'op = SelectObject(hdc, np)
+'nB = CreateSolidBrush( bColor)   'new Brush
+'oB = SelectObject(hdc, nB)
 
-Ellipse hdc,cix-cra,ciy-cra,cra+cix,cra+ciy
+'Ellipse hdc,cix-cra,ciy-cra,cra+cix,cra+ciy
 
-BitBlt(hDCmem, 0, 0, ww, wh, hdc, 0, 0, SRCCOPY)
-DeleteObject(SelectObject(hdc, op))
-DeleteObject(SelectObject(hdc, oB))
-ReleaseDC( wID, hdc)
+'BitBlt(hDCmem, 0, 0, ww, wh, hdc, 0, 0, SRCCOPY)
+'DeleteObject(SelectObject(hdc, op))
+'DeleteObject(SelectObject(hdc, oB))
+'ReleaseDC( wID, hdc)
+'
+'Sub Oval(sys x,y,ra,rb, r,g,b)
+    sys iPen,iBrush
+    'bColor = r + g*256 + b*65536 
+    iBrush = CreateSolidBrush (bColor)
+    iPen = CreatePen(PS_SOLID,1,fColor)  'new pen
+    SelectObject Hdcmem, iPen
+    SelectObject Hdcmem, iBrush
+    Ellipse Hdcmem,cix-cra,ciy-cra,cra+cix,cra+ciy
+    'DeleteObject iPen :  DeleteObject iBrush
+    
+   'ReleaseDC( wID, hdcMem)
+'End Sub
+
 End SUB
 
 'draw rectangle................................................................................
@@ -1325,8 +1878,9 @@ ReleaseDC( win, hdcMem)
 'SelectObject hdcMem, hFont
 hFont = CreateFont height,width,0,0,flag,0,0,0,0,0,0,0,0,fontname
 SelectObject hdcMem, hFont
+'without SetBkMode BCOLOR r,g,b,.. work ?
 SetBkMode hdcMem,1
-'blit to memDC
+
 'BitBlt(hDC, 0, 0, ww, wh, hdcMem, 0, 0, SRCCOPY)
 DeleteObject hFont
 'ReleaseDC( win, hdcMem)
