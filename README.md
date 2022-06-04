@@ -11,12 +11,14 @@ It is easy to modify and use for any purpose.
 micro(A) interpreter comes with complete IDE in which you can make your programs.
 
 For more information look : https://aurelsoft.ucoz.com
+Community Forum : http://basic4all.epizy.com
 
 You tube videos: https://youtu.be/eZWxhR25Ng4
 https://www.youtube.com/watch?v=2_m-pmXFjT4
 
 Binary version + source code
 https://aurelsoft.ucoz.com/microAEditor.zip
+Current version is under Discussion board.
 
 ![ScreenShot](https://aurelsoft.ucoz.com/logoA3.png)
 ![ScreenShot](https://aurelsoft.ucoz.com/microA_Interpreter.png)
@@ -24,10 +26,13 @@ https://aurelsoft.ucoz.com/microAEditor.zip
 # List of built-in statements and functions
 ## variable types :
 **var a,b,c,d**  floating point variable type
+**var a[10],b[20],c[30]**  floating point array type
 
 **str e,f,g,h**  string variable type
+**str e[10],f[20],g[20]**  string array type
 
-**ptr i,j,k,l**  int|pointer variable type
+**ptr i,j,k,l**  int | pointer variable type
+**ptr i[10],j[20],k[30]**  integer / pointer array type
 
 ## statements :
 ** NOTE : Expressions are not allowed as argument !!!
@@ -54,25 +59,11 @@ https://aurelsoft.ucoz.com/microAEditor.zip
 
 **if** var **operator** n|s **Logic operator** var **operator** n|s   -> if statement
 
-**operator** :
+**operator** : **<** - less, **>** - greater, **=** - equal, **!** - not
 
-**<** - less
+**Logic operator** : **&** - and  , **|** - or
 
-**>** - greater
-
-**=** - equal
-
-**!** - not
-
-**Logic operator** :
-
-**&** - and
-
-**|** - or
-
-**else** - else statement
-
-**endif** - end if
+**else** - else statement , **endif** - end if
 
 **loops** :
 
@@ -94,12 +85,8 @@ new winApi functions added :
 
 //before you use message name you must declare it by ptr statement
 
-ptr wmMouseMove ,wmKeyDown
+**ptr** wmMouseMove ,wmKeyDown
 
-**WinMsg** msagName
-
-//
-
-**EndWm**
+**WinMsg** msagName <code>  **EndWm**
 
 
