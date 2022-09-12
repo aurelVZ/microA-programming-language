@@ -5,9 +5,8 @@ Tokenizer for micro(A) Interpreter is first part of micro(A) programming languag
 It is written as include file microAT.inc .
 This is a general purpose tokenizer which can be used in any modern imperative 
 programming language.
-It is written in o2 compiler and as such is very fast ,it use simple
-data structure - array of tokens and array of token types.
-It is easy to modify and use for any purpose.
+It use simple data structure - array of tokens and array of token types.
+Easy to modify and use for any purpose.
 micro(A) interpreter comes with complete IDE in which you can make your programs.
 
 For more information look : https://aurelsoft.ucoz.com
