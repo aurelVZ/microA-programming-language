@@ -16,8 +16,8 @@ You tube videos: https://youtu.be/eZWxhR25Ng4
 https://www.youtube.com/watch?v=2_m-pmXFjT4
 
 Binary version + source code
-https://aurelsoft.ucoz.com/microAEditor.zip
-Current version is under Discussion board.
+of
+CURRENT version is under Discussion board.
 
 ![ScreenShot](https://aurelsoft.ucoz.com/logoA3.png)
 ![ScreenShot](https://aurelsoft.ucoz.com/microA_Interpreter.png)
