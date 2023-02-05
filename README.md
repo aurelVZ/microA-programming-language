@@ -14,6 +14,8 @@ Community Forum : http://basic4all.epizy.com
 
 You tube videos: https://youtu.be/eZWxhR25Ng4
 https://www.youtube.com/watch?v=2_m-pmXFjT4
+micro(A) Quick start
+https://youtu.be/mIIFKCtfCtY
 
 Binary version + source code
 of
