@@ -9,7 +9,7 @@ It use simple data structure - array of tokens and array of token types.
 Easy to modify and use for any purpose.
 micro(A) interpreter comes with complete IDE in which you can make your programs.
 
-For more information look : https://aurelsoft.ucoz.com
+For more information look on
 Community Forum : http://basic4all.epizy.com
 
 You tube videos: https://youtu.be/eZWxhR25Ng4
