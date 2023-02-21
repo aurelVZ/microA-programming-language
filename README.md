@@ -17,9 +17,8 @@ https://www.youtube.com/watch?v=2_m-pmXFjT4
 micro(A) Quick start
 https://youtu.be/mIIFKCtfCtY
 
-Binary version + source code
-of
-CURRENT version is under Discussion board.
+Binary version is under Discussion board.
+Source code only by request!
 
 ![ScreenShot](https://aurelsoft.ucoz.com/logoA3.png)
 ![ScreenShot](https://aurelsoft.ucoz.com/microA_Interpreter.png)
