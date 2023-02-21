@@ -1,4 +1,5 @@
 'micro(A) tokenizer by Aurel 19.2.2021
+'copyright (c) AurelSoft 2023
 Include "microBh.inc"
 INT startTime ,endTime: float procTime  ' GetTickCount -timer init
 declare sub tokenizer( src as string) as INT
