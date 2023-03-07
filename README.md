@@ -1,16 +1,10 @@
 # micro(A) programming language
 micro(A) is a modern and minimal general purpose programming language.
 It is Easy to Use BASIC like Programming Language.
-This is a general purpose interpreter.
 micro(A) interpreter comes with complete IDE in which you can make your programs.
 
 For more information look on
 Community Forum : http://basic4all.epizy.com
-
-You tube videos: https://youtu.be/eZWxhR25Ng4
-https://www.youtube.com/watch?v=2_m-pmXFjT4
-micro(A) Quick start
-https://youtu.be/mIIFKCtfCtY
 
 Binary version is under Discussion board.
 Source code only by request!
