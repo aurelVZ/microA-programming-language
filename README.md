@@ -4,7 +4,7 @@ It is Easy to Use BASIC like Programming Language.
 micro(A) interpreter comes with complete IDE in which you can make your programs.
 
 For more information look on
-Community Forum : http://basic4all.epizy.com
+Community Forum 
 
 Binary version is under Discussion board.
 Source code only by request!
