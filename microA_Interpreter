@@ -1,7 +1,7 @@
 'micro(A) Interpreter - with recursive descent token evaluator
-'3 PASS processing -> tokenizer,parser,executor
-'public artistic licence ,copyright (c)AurelSoft
-' by Aurel - last update: 21.2.2023
+'CURRENT VERSION v 10
+'Artistic Licence ,copyright (c)AurelSoft
+' by Aurel - last update: 18.5.2023
 
 *** because of security reasons source code only by request ***
 *** email me on aurelw.wiz@gmail.com ***
