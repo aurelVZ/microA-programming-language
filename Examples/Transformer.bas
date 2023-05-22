@@ -1,6 +1,7 @@
-' Transformer Calculator in micro(A) by Aurel,(c)AurelSoft
+'Transformer Calculator in micro(A) by Aurel,(c)AurelSoft
 var mx, my, wp, pvolt, pturns, svolt, sturns, tpv ,trlen
-ptr wmMouseMove ,wmKeyDown
+ptr wmKeyDown
+var leftkey, rightkey ,upkey, downkey
 tpv = 1 : trlen = 200
 wcolor 40,60,120 fcolor 140,180,200
 print 5,310,"PRIMARY(turns)" : print 5,350,"VOLTAGE  ( V )"
@@ -48,7 +49,12 @@ if wp = 34
    tpv = tpv - 1 : pturns = pvolt * tpv : sturns = svolt * tpv : DisplayUpdate() 
 endif
 
+While wp ! 27 
+   'wait...
+Wend
+
 EndWm
+
 
 func DisplayUpdate() 
    'primary
