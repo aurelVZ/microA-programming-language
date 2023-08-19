@@ -1,0 +1,43 @@
+' mandelbrot translation from BASIC-256 
+var graphwidth,graphheight,kt,m,xmin,xmax,ymin,ymax
+var dx,dy,x,y,jx,jy,k,wx,wy,tx,ty,r
+graphwidth = 600 : graphheight = 600
+kt=30 : m=4.0
+xmin=2.1 : xmax = -0.6 : ymin = -1.5 : ymax = 1.5
+dx=(xmax-xmin)/graphwidth : dy=(ymax-ymin)/graphheight
+wcolor 0, 0, 0:swap
+
+x=0
+while x <  graphwidth
+jx=xmin+x*dx
+y=0
+while y < graphheight
+jy=ymin+y*dy
+k = 0 : wx = 0 : wy = 0
+
+Label MainCalculation
+tx=wx*wx-(wy*wy+jx)
+ty=2*wx*wy+jy
+wx=tx
+wy=ty
+r=wx*wx+wy*wy
+k=k+1
+if r < m & k < kt : goto MainCalculation : endif
+
+
+if k > 0  : fcolor 0, 0, 139  : endif 
+if k > 5  : fcolor 0, 0, 139  : endif    ' darkblue
+if k > 10 : fcolor 0, 0, 255  : endif    ' blue
+if k > 15 : fcolor 0, 100, 0  : endif    'darkgreen
+if k > 20 : fcolor 0, 250 ,0  : endif     'green
+if k > 25 : fcolor 139, 0, 0  : endif    ' darkred
+if k > 30 : fcolor 250, 0, 0  : endif    'red
+if k > 35 : fcolor 48,25,52   : endif    'darkpurple
+if k > 40 : fcolor 160,32,240 : endif   'purple
+if k > 45 : fcolor 0,0,0      : endif    'black
+pset x,y 
+y=y+1
+wend
+swap
+x=x+1
+wend
